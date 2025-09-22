@@ -1,0 +1,11 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <rect width="64" height="64" fill="#2c3e50" rx="8"/>
+  <!-- Tree trunk -->
+  <rect x="28" y="38" width="8" height="18" fill="#A0522D"/>
+  <!-- Tree foliage -->
+  <circle cx="32" cy="28" r="18" fill="#8FBC8F"/>
+  <circle cx="26" cy="24" r="12" fill="#9ACD32"/>
+  <circle cx="38" cy="26" r="10" fill="#ADFF2F"/>
+  <!-- Title -->
+  <text x="32" y="58" text-anchor="middle" fill="#ffd700" font-family="Arial, sans-serif" font-size="10" font-weight="bold">OAK</text>
+</svg>

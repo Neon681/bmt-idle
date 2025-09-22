@@ -1,0 +1,646 @@
+/* BMT Idle - Main Styles */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap');
+
+/* Core Variables */
+:root {
+  --safe-area-top: env(safe-area-inset-top);
+  --safe-area-bottom: env(safe-area-inset-bottom);
+  --safe-area-left: env(safe-area-inset-left);
+  --safe-area-right: env(safe-area-inset-right);
+  --gap: 24px;
+  --margin: 12px;
+  --row: 56px;
+  
+  /* Enhanced OSRS Color Palette */
+  --osrs-brown: #3e2723;
+  --osrs-tan: #8d6e63;
+  --osrs-gold: #ffd700;
+  --osrs-gold-dark: #b8860b;
+  --osrs-green: #32cd32;
+  --osrs-blue: #4169e1;
+  --osrs-red: #dc143c;
+  --osrs-purple: #9932cc;
+  --osrs-orange: #ff8c00;
+  --osrs-dark: #1a1a1a;
+  --osrs-darker: #0d0d0d;
+  --osrs-bronze: #cd7f32;
+  --osrs-iron: #c0c0c0;
+  --osrs-steel: #4682b4;
+  
+  /* Enhanced UI Colors */
+  --bg-primary: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  --bg-secondary: linear-gradient(135deg, #1a252f 0%, #263849 100%);
+  --bg-tertiary: #0f1419;
+  --text-primary: #ffffff;
+  --text-secondary: #ecf0f1;
+  --text-muted: #95a5a6;
+  --border-color: #34495e;
+  --hover-color: rgba(255, 215, 0, 0.15);
+  --shadow-color: rgba(0, 0, 0, 0.3);
+}
+
+@media (max-width: 1000px) {
+  :root {
+    --gap: 16px;
+    --margin: 8px;
+  }
+}
+
+/* Layout Components */
+.app-container {
+  display: flex;
+  height: 100vh;
+  background: var(--bg-primary);
+  font-family: 'Jost', 'Cinzel', serif;
+}
+
+.sidebar {
+  width: 280px;
+  background: var(--bg-tertiary);
+  border-right: 3px solid var(--osrs-gold);
+  box-shadow: 2px 0 10px var(--shadow-color);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-secondary);
+}
+
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--gap);
+}
+
+/* Game Header */
+.game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem var(--gap);
+  background: var(--bg-tertiary);
+  border-bottom: 2px solid var(--osrs-gold);
+  box-shadow: 0 2px 8px var(--shadow-color);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-left {
+  flex: 1;
+}
+
+.page-title {
+  font-family: 'Cinzel', serif;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--osrs-gold);
+  margin: 0;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.coins-display {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 215, 0, 0.1);
+  border: 1px solid var(--osrs-gold);
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  color: var(--osrs-gold);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.coins-icon {
+  font-size: 1.2rem;
+}
+
+.coins-amount {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--osrs-gold);
+}
+
+@media (max-width: 768px) {
+  .game-header {
+    padding: 0.75rem 1rem;
+  }
+  
+  .page-title {
+    font-size: 1.2rem;
+  }
+  
+  .coins-display {
+    padding: 0.4rem 0.8rem;
+  }
+  
+  .coins-amount {
+    font-size: 1rem;
+  }
+}
+
+/* Navigation */
+.nav-header {
+  padding: var(--gap);
+  text-align: center;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.nav-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--osrs-gold);
+  font-family: 'Cinzel', serif;
+  text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.8);
+  letter-spacing: 1px;
+  background: linear-gradient(135deg, var(--osrs-gold) 0%, #fff 50%, var(--osrs-gold) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.nav-menu {
+  flex: 1;
+  padding: var(--margin);
+}
+
+.nav-section {
+  margin-bottom: var(--gap);
+}
+
+.nav-section-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: var(--margin);
+  padding: 0 var(--margin);
+}
+
+.nav-item {
+  display: block;
+  padding: 12px var(--margin);
+  color: var(--text-primary);
+  text-decoration: none;
+  border-radius: 8px;
+  margin-bottom: 4px;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.nav-item:hover {
+  background: var(--hover-color);
+  border-color: var(--osrs-gold);
+  color: var(--osrs-gold);
+}
+
+.nav-item.active {
+  background: var(--osrs-gold);
+  color: var(--osrs-darker);
+  font-weight: 600;
+}
+
+.nav-item-icon {
+  display: inline-block;
+  width: 20px;
+  margin-right: 8px;
+  text-align: center;
+}
+
+/* Cards and Panels */
+.card {
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  padding: var(--gap);
+  margin-bottom: var(--gap);
+  box-shadow: 0 6px 20px var(--shadow-color);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--osrs-gold) 0%, var(--osrs-gold-dark) 100%);
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px var(--shadow-color);
+  border-color: var(--osrs-gold);
+}
+
+.card.disabled-card {
+  opacity: 0.5;
+  filter: grayscale(0.8);
+  pointer-events: none;
+}
+
+.card.disabled-card::before {
+  background: linear-gradient(90deg, #666 0%, #999 100%);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--margin);
+  padding-bottom: var(--margin);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.card-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--osrs-gold);
+  font-family: 'Cinzel', serif;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.card-subtitle {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-height: 40px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.btn:hover::before {
+  left: 100%;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--osrs-gold) 0%, var(--osrs-gold-dark) 100%);
+  color: var(--osrs-darker);
+  border-color: var(--osrs-gold-dark);
+  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #ffed4e 0%, var(--osrs-gold) 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
+}
+
+.btn-secondary {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+  background: var(--border-color);
+}
+
+.btn-success {
+  background: var(--osrs-green);
+  color: white;
+}
+
+.btn-danger {
+  background: var(--osrs-red);
+  color: white;
+}
+
+.btn-small {
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  min-height: 28px;
+}
+
+.btn-small.btn-secondary {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.btn-small.btn-secondary:hover {
+  background: var(--border-color);
+  color: var(--text-primary);
+}
+
+/* Inventory Layout */
+.inventory-container {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 1200px) {
+  .inventory-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Inventory Item Cards */
+.inventory-item-card {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  padding: 1rem;
+  position: relative;
+}
+
+.inventory-item-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  border-color: var(--osrs-gold);
+}
+
+.inventory-item-card.selected {
+  border-color: var(--osrs-gold);
+  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.3);
+  background: rgba(255, 215, 0, 0.05);
+}
+
+.inventory-item-card.selected::after {
+  content: '✓';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: var(--osrs-gold);
+  color: var(--bg-primary);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+/* Item Detail Panel */
+#inventory-detail-panel {
+  position: sticky;
+  top: 1rem;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+}
+
+.item-detail-info {
+  padding: 0;
+}
+
+.item-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.item-actions .btn {
+  align-self: flex-start;
+}
+
+.selling-controls {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 4px;
+  padding: 1rem;
+}
+
+.quick-sell-buttons {
+  flex-wrap: wrap;
+}
+
+.quick-sell-buttons .btn-small {
+  flex: 1;
+  min-width: 60px;
+}
+
+/* Quantity Input */
+.quantity-input {
+  padding: 4px 8px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  border-radius: 4px;
+  text-align: center;
+  font-size: 0.875rem;
+}
+
+.quantity-input:focus {
+  outline: none;
+  border-color: var(--osrs-gold);
+  box-shadow: 0 0 0 1px rgba(255, 215, 0, 0.3);
+}
+
+/* Forms */
+.form-group {
+  margin-bottom: var(--margin);
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.form-input {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--osrs-gold);
+  box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.2);
+}
+
+/* Skill Related */
+.skill-icon {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, var(--osrs-bronze) 0%, var(--osrs-gold) 100%);
+  border: 2px solid var(--osrs-gold);
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  font-weight: bold;
+  color: var(--osrs-darker);
+  font-size: 1.2rem;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.skill-level {
+  font-weight: 700;
+  color: var(--osrs-gold);
+  font-family: 'Cinzel', serif;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.xp-bar {
+  width: 100%;
+  height: 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 8px 0;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.xp-progress {
+  height: 100%;
+  background: linear-gradient(90deg, var(--osrs-green) 0%, var(--osrs-gold) 50%, var(--osrs-gold-dark) 100%);
+  transition: width 0.5s ease;
+  box-shadow: 0 0 10px rgba(50, 205, 50, 0.5);
+}
+
+/* Grid Layouts */
+.grid {
+  display: grid;
+  gap: var(--gap);
+}
+
+.grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.grid-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 768px) {
+  .app-container {
+    flex-direction: column;
+  }
+  
+  .sidebar {
+    width: 100%;
+    height: auto;
+  }
+  
+  .grid-2, .grid-3, .grid-4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Utility Classes */
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.text-gold { color: var(--osrs-gold); }
+.text-green { color: var(--osrs-green); }
+.text-red { color: var(--osrs-red); }
+.text-muted { color: var(--text-muted); }
+
+.mb-0 { margin-bottom: 0; }
+.mb-1 { margin-bottom: calc(var(--margin) * 0.5); }
+.mb-2 { margin-bottom: var(--margin); }
+.mb-3 { margin-bottom: calc(var(--margin) * 1.5); }
+
+.hidden { display: none; }
+.flex { display: flex; }
+.flex-center { display: flex; align-items: center; justify-content: center; }
+.flex-between { display: flex; align-items: center; justify-content: space-between; }
+
+/* Login/Auth Styles */
+.auth-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  padding: 2rem;
+  background: var(--bg-secondary);
+  border: 2px solid var(--osrs-gold);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.auth-title {
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--osrs-gold);
+  margin-bottom: 2rem;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.auth-form .form-group {
+  margin-bottom: 1.5rem;
+}
+
+.auth-form .btn {
+  width: 100%;
+  padding: 12px;
+  font-size: 1rem;
+}
+
+.auth-links {
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.auth-links a {
+  color: var(--osrs-gold);
+  text-decoration: none;
+}
+
+.auth-links a:hover {
+  text-decoration: underline;
+}

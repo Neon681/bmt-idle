@@ -1,0 +1,14 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <rect width="64" height="64" fill="#2c3e50" rx="8"/>
+  <!-- Tree trunk -->
+  <rect x="29" y="35" width="6" height="21" fill="#8B7355"/>
+  <!-- Drooping willow branches -->
+  <path d="M32 20 Q20 25 18 40 Q20 35 32 30" fill="#9ACD32" opacity="0.8"/>
+  <path d="M32 20 Q44 25 46 40 Q44 35 32 30" fill="#9ACD32" opacity="0.8"/>
+  <path d="M32 20 Q25 30 22 45 Q25 40 32 35" fill="#ADFF2F" opacity="0.7"/>
+  <path d="M32 20 Q39 30 42 45 Q39 40 32 35" fill="#ADFF2F" opacity="0.7"/>
+  <!-- Main canopy -->
+  <ellipse cx="32" cy="25" rx="14" ry="8" fill="#9ACD32"/>
+  <!-- Title -->
+  <text x="32" y="58" text-anchor="middle" fill="#ffd700" font-family="Arial, sans-serif" font-size="8" font-weight="bold">WILLOW</text>
+</svg>
