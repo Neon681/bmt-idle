@@ -1,0 +1,15 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bronzeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#CD7F32;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8B4513;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Bar -->
+  <rect x="6" y="8" width="20" height="16" fill="url(#bronzeGrad)" rx="2"/>
+  <!-- Bar texture -->
+  <rect x="8" y="10" width="16" height="2" fill="#8B4513" opacity="0.3"/>
+  <rect x="8" y="14" width="16" height="2" fill="#8B4513" opacity="0.3"/>
+  <rect x="8" y="18" width="16" height="2" fill="#8B4513" opacity="0.3"/>
+  <rect x="8" y="22" width="16" height="2" fill="#8B4513" opacity="0.3"/>
+</svg>

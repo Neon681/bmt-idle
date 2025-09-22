@@ -1,0 +1,16 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bronzeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#CD7F32;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8B4513;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Platebody main -->
+  <rect x="6" y="8" width="20" height="16" fill="url(#bronzeGrad)" rx="2"/>
+  <!-- Shoulder guards -->
+  <rect x="4" y="10" width="4" height="6" fill="url(#bronzeGrad)" rx="1"/>
+  <rect x="24" y="10" width="4" height="6" fill="url(#bronzeGrad)" rx="1"/>
+  <!-- Chest details -->
+  <rect x="12" y="12" width="8" height="8" fill="#8B4513" rx="1"/>
+  <rect x="14" y="14" width="4" height="4" fill="url(#bronzeGrad)" rx="0.5"/>
+</svg>

@@ -40,6 +40,9 @@ class BMTIdle {
         
         // Calculate offline progress
         this.calculateOfflineProgress();
+        
+        // Give starting equipment if needed
+        this.giveStartingEquipment();
       } else {
         console.log('BMT Idle: No saved user found, showing login page');
       }
@@ -75,10 +78,11 @@ class BMTIdle {
     const saved = localStorage.getItem('bmtIdle_gameData');
     if (saved) {
       const savedData = JSON.parse(saved);
-      // Always use fresh monster data to ensure we have the latest definitions
+      // Always use fresh data to ensure we have the latest definitions
       return { 
         ...defaultData, 
         ...savedData,
+        items: this.getDefaultItems(), // Force fresh item data
         monsters: this.getDefaultMonsters() // Force fresh monster data
       };
     }
@@ -153,10 +157,59 @@ class BMTIdle {
       gold_bar: { name: 'Gold Bar', category: 'material', value: 75 },
       mithril_bar: { name: 'Mithril Bar', category: 'material', value: 100 },
       
-      // Equipment
-      bronze_sword: { name: 'Bronze Sword', category: 'weapon', value: 50, stats: { attack: 1 } },
-      iron_sword: { name: 'Iron Sword', category: 'weapon', value: 150, stats: { attack: 10 } },
-      steel_sword: { name: 'Steel Sword', category: 'weapon', value: 300, stats: { attack: 25 } },
+      // Weapons
+      bronze_sword: { name: 'Bronze Sword', category: 'weapon', slot: 'weapon', value: 50, level: 1, stats: { attack: 2, strength: 1 } },
+      iron_sword: { name: 'Iron Sword', category: 'weapon', slot: 'weapon', value: 150, level: 5, stats: { attack: 8, strength: 6 } },
+      steel_sword: { name: 'Steel Sword', category: 'weapon', slot: 'weapon', value: 300, level: 10, stats: { attack: 15, strength: 12 } },
+      mithril_sword: { name: 'Mithril Sword', category: 'weapon', slot: 'weapon', value: 600, level: 20, stats: { attack: 25, strength: 20 } },
+      
+      // Armor - Helmets
+      bronze_helmet: { name: 'Bronze Helmet', category: 'armor', slot: 'helmet', value: 30, level: 1, stats: { defence: 2 } },
+      iron_helmet: { name: 'Iron Helmet', category: 'armor', slot: 'helmet', value: 100, level: 5, stats: { defence: 6 } },
+      steel_helmet: { name: 'Steel Helmet', category: 'armor', slot: 'helmet', value: 200, level: 10, stats: { defence: 12 } },
+      mithril_helmet: { name: 'Mithril Helmet', category: 'armor', slot: 'helmet', value: 400, level: 20, stats: { defence: 20 } },
+      
+      // Armor - Body
+      bronze_platebody: { name: 'Bronze Platebody', category: 'armor', slot: 'body', value: 80, level: 1, stats: { defence: 5 } },
+      iron_platebody: { name: 'Iron Platebody', category: 'armor', slot: 'body', value: 250, level: 5, stats: { defence: 15 } },
+      steel_platebody: { name: 'Steel Platebody', category: 'armor', slot: 'body', value: 500, level: 10, stats: { defence: 30 } },
+      mithril_platebody: { name: 'Mithril Platebody', category: 'armor', slot: 'body', value: 1000, level: 20, stats: { defence: 50 } },
+      
+      // Armor - Legs
+      bronze_platelegs: { name: 'Bronze Platelegs', category: 'armor', slot: 'legs', value: 60, level: 1, stats: { defence: 3 } },
+      iron_platelegs: { name: 'Iron Platelegs', category: 'armor', slot: 'legs', value: 200, level: 5, stats: { defence: 12 } },
+      steel_platelegs: { name: 'Steel Platelegs', category: 'armor', slot: 'legs', value: 400, level: 10, stats: { defence: 24 } },
+      mithril_platelegs: { name: 'Mithril Platelegs', category: 'armor', slot: 'legs', value: 800, level: 20, stats: { defence: 40 } },
+      
+      // Armor - Boots
+      bronze_boots: { name: 'Bronze Boots', category: 'armor', slot: 'boots', value: 20, level: 1, stats: { defence: 1 } },
+      iron_boots: { name: 'Iron Boots', category: 'armor', slot: 'boots', value: 80, level: 5, stats: { defence: 4 } },
+      steel_boots: { name: 'Steel Boots', category: 'armor', slot: 'boots', value: 160, level: 10, stats: { defence: 8 } },
+      mithril_boots: { name: 'Mithril Boots', category: 'armor', slot: 'boots', value: 320, level: 20, stats: { defence: 16 } },
+      
+      // Armor - Gloves
+      bronze_gloves: { name: 'Bronze Gloves', category: 'armor', slot: 'gloves', value: 15, level: 1, stats: { defence: 1 } },
+      iron_gloves: { name: 'Iron Gloves', category: 'armor', slot: 'gloves', value: 60, level: 5, stats: { defence: 3 } },
+      steel_gloves: { name: 'Steel Gloves', category: 'armor', slot: 'gloves', value: 120, level: 10, stats: { defence: 6 } },
+      mithril_gloves: { name: 'Mithril Gloves', category: 'armor', slot: 'gloves', value: 240, level: 20, stats: { defence: 12 } },
+      
+      // Jewelry - Necklaces
+      gold_necklace: { name: 'Gold Necklace', category: 'jewelry', slot: 'necklace', value: 200, level: 1, stats: { attack: 1, strength: 1 } },
+      sapphire_necklace: { name: 'Sapphire Necklace', category: 'jewelry', slot: 'necklace', value: 500, level: 5, stats: { attack: 3, strength: 2 } },
+      emerald_necklace: { name: 'Emerald Necklace', category: 'jewelry', slot: 'necklace', value: 1000, level: 10, stats: { attack: 5, strength: 4 } },
+      ruby_necklace: { name: 'Ruby Necklace', category: 'jewelry', slot: 'necklace', value: 2000, level: 20, stats: { attack: 8, strength: 6 } },
+      
+      // Jewelry - Rings
+      gold_ring: { name: 'Gold Ring', category: 'jewelry', slot: 'ring', value: 100, level: 1, stats: { defence: 1 } },
+      sapphire_ring: { name: 'Sapphire Ring', category: 'jewelry', slot: 'ring', value: 300, level: 5, stats: { defence: 2, attack: 1 } },
+      emerald_ring: { name: 'Emerald Ring', category: 'jewelry', slot: 'ring', value: 600, level: 10, stats: { defence: 4, attack: 2 } },
+      ruby_ring: { name: 'Ruby Ring', category: 'jewelry', slot: 'ring', value: 1200, level: 20, stats: { defence: 6, attack: 3 } },
+      
+      // Capes
+      cape: { name: 'Cape', category: 'armor', slot: 'cape', value: 50, level: 1, stats: { defence: 1 } },
+      wool_cape: { name: 'Wool Cape', category: 'armor', slot: 'cape', value: 150, level: 5, stats: { defence: 2, attack: 1 } },
+      silk_cape: { name: 'Silk Cape', category: 'armor', slot: 'cape', value: 300, level: 10, stats: { defence: 3, attack: 2 } },
+      magic_cape: { name: 'Magic Cape', category: 'armor', slot: 'cape', value: 600, level: 20, stats: { defence: 5, attack: 3, strength: 2 } },
       
       // Seeds and Crops
       potato_seed: { name: 'Potato Seed', category: 'seed', value: 1 },
@@ -287,9 +340,28 @@ class BMTIdle {
         potato_seed: 5,
         wheat_seed: 3,
         herb_seed: 1,
-        vial: 10
+        vial: 10,
+        // Starting equipment
+        bronze_sword: 1,
+        bronze_helmet: 1,
+        bronze_platebody: 1,
+        gold_necklace: 1,
+        gold_ring: 1,
+        cape: 1
       },
-      equipment: {},
+      
+      // Equipment slots
+      equipment: {
+        weapon: null,
+        helmet: null,
+        body: null,
+        legs: null,
+        boots: null,
+        gloves: null,
+        necklace: null,
+        ring: null,
+        cape: null
+      },
       bankItems: {},
       
       // Progress
@@ -628,6 +700,8 @@ class BMTIdle {
         return this.renderDashboard();
       case 'inventory':
         return this.renderInventory();
+      case 'equipment':
+        return this.renderEquipment();
       case 'woodcutting':
         return this.renderSkillPage('woodcutting');
       case 'mining':
@@ -832,6 +906,129 @@ class BMTIdle {
           </div>
           <div id="item-detail-content">
             <p class="text-muted text-center" style="padding: 2rem;">Click on an item to view details and actions.</p>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  renderEquipment() {
+    const equipment = this.currentUser.equipment;
+    const totalStats = this.calculateTotalStats();
+    
+    return `
+      <div class="equipment-container">
+        <!-- Equipment Slots -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">⚔️ Equipment</h2>
+            <div class="text-muted">Equip items to boost your combat stats</div>
+          </div>
+          
+          <div class="equipment-layout">
+            <!-- Left Side - Armor -->
+            <div class="equipment-side">
+              <div class="equipment-slot" data-slot="helmet">
+                <div class="slot-label">Helmet</div>
+                <div class="slot-content" onclick="game.openEquipmentSlot('helmet')">
+                  ${equipment.helmet ? this.renderEquippedItem(equipment.helmet) : this.renderEmptySlot('helmet')}
+                </div>
+              </div>
+              
+              <div class="equipment-slot" data-slot="necklace">
+                <div class="slot-label">Necklace</div>
+                <div class="slot-content" onclick="game.openEquipmentSlot('necklace')">
+                  ${equipment.necklace ? this.renderEquippedItem(equipment.necklace) : this.renderEmptySlot('necklace')}
+                </div>
+              </div>
+              
+              <div class="equipment-slot" data-slot="cape">
+                <div class="slot-label">Cape</div>
+                <div class="slot-content" onclick="game.openEquipmentSlot('cape')">
+                  ${equipment.cape ? this.renderEquippedItem(equipment.cape) : this.renderEmptySlot('cape')}
+                </div>
+              </div>
+            </div>
+            
+            <!-- Center - Main Equipment -->
+            <div class="equipment-center">
+              <div class="equipment-slot" data-slot="weapon">
+                <div class="slot-label">Weapon</div>
+                <div class="slot-content" onclick="game.openEquipmentSlot('weapon')">
+                  ${equipment.weapon ? this.renderEquippedItem(equipment.weapon) : this.renderEmptySlot('weapon')}
+                </div>
+              </div>
+              
+              <div class="equipment-slot" data-slot="body">
+                <div class="slot-label">Body</div>
+                <div class="slot-content" onclick="game.openEquipmentSlot('body')">
+                  ${equipment.body ? this.renderEquippedItem(equipment.body) : this.renderEmptySlot('body')}
+                </div>
+              </div>
+              
+              <div class="equipment-slot" data-slot="legs">
+                <div class="slot-label">Legs</div>
+                <div class="slot-content" onclick="game.openEquipmentSlot('legs')">
+                  ${equipment.legs ? this.renderEquippedItem(equipment.legs) : this.renderEmptySlot('legs')}
+                </div>
+              </div>
+            </div>
+            
+            <!-- Right Side - Accessories -->
+            <div class="equipment-side">
+              <div class="equipment-slot" data-slot="gloves">
+                <div class="slot-label">Gloves</div>
+                <div class="slot-content" onclick="game.openEquipmentSlot('gloves')">
+                  ${equipment.gloves ? this.renderEquippedItem(equipment.gloves) : this.renderEmptySlot('gloves')}
+                </div>
+              </div>
+              
+              <div class="equipment-slot" data-slot="boots">
+                <div class="slot-label">Boots</div>
+                <div class="slot-content" onclick="game.openEquipmentSlot('boots')">
+                  ${equipment.boots ? this.renderEquippedItem(equipment.boots) : this.renderEmptySlot('boots')}
+                </div>
+              </div>
+              
+              <div class="equipment-slot" data-slot="ring">
+                <div class="slot-label">Ring</div>
+                <div class="slot-content" onclick="game.openEquipmentSlot('ring')">
+                  ${equipment.ring ? this.renderEquippedItem(equipment.ring) : this.renderEmptySlot('ring')}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Stats Display -->
+        <div class="card">
+          <div class="card-header">
+            <h3>📊 Combat Stats</h3>
+          </div>
+          <div class="grid grid-3">
+            <div>
+              <div class="text-muted">Attack</div>
+              <div class="text-gold">${totalStats.attack}</div>
+            </div>
+            <div>
+              <div class="text-muted">Strength</div>
+              <div class="text-gold">${totalStats.strength}</div>
+            </div>
+            <div>
+              <div class="text-muted">Defence</div>
+              <div class="text-gold">${totalStats.defence}</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Equipment Selection Modal -->
+        <div class="card" id="equipment-selection" style="display: none;">
+          <div class="card-header">
+            <h3 id="equipment-selection-title">Select Equipment</h3>
+            <button class="btn btn-secondary btn-small" onclick="game.closeEquipmentSelection()">✕ Close</button>
+          </div>
+          <div id="equipment-selection-content">
+            <p class="text-muted text-center" style="padding: 2rem;">Loading equipment...</p>
           </div>
         </div>
       </div>
@@ -1176,6 +1373,7 @@ class BMTIdle {
       case 'smithing':
         return `
           <div class="grid grid-3">
+            <!-- Weapons -->
             <div class="card">
               <h3>Bronze Sword</h3>
               <p>Level 1 required</p>
@@ -1187,22 +1385,84 @@ class BMTIdle {
             </div>
             <div class="card">
               <h3>Iron Sword</h3>
-              <p>Level 15 required</p>
+              <p>Level 5 required</p>
               <p>25 XP per sword</p>
               <p>Requires: Iron Bar</p>
-              <button class="btn btn-primary" ${userSkill.level < 15 ? 'disabled' : ''} 
+              <button class="btn btn-primary" ${userSkill.level < 5 ? 'disabled' : ''} 
                 onclick="game.smithItem('iron_bar', 'iron_sword', 25, 5000)">
                 Smith Iron Sword
               </button>
             </div>
             <div class="card">
               <h3>Steel Sword</h3>
-              <p>Level 30 required</p>
+              <p>Level 10 required</p>
               <p>37.5 XP per sword</p>
               <p>Requires: Steel Bar</p>
-              <button class="btn btn-primary" ${userSkill.level < 30 ? 'disabled' : ''} 
+              <button class="btn btn-primary" ${userSkill.level < 10 ? 'disabled' : ''} 
                 onclick="game.smithItem('steel_bar', 'steel_sword', 37.5, 6000)">
                 Smith Steel Sword
+              </button>
+            </div>
+            
+            <!-- Armor - Helmets -->
+            <div class="card">
+              <h3>Bronze Helmet</h3>
+              <p>Level 1 required</p>
+              <p>10 XP per helmet</p>
+              <p>Requires: Bronze Bar</p>
+              <button class="btn btn-primary" onclick="game.smithItem('bronze_bar', 'bronze_helmet', 10, 3000)">
+                Smith Bronze Helmet
+              </button>
+            </div>
+            <div class="card">
+              <h3>Iron Helmet</h3>
+              <p>Level 5 required</p>
+              <p>20 XP per helmet</p>
+              <p>Requires: Iron Bar</p>
+              <button class="btn btn-primary" ${userSkill.level < 5 ? 'disabled' : ''} 
+                onclick="game.smithItem('iron_bar', 'iron_helmet', 20, 4000)">
+                Smith Iron Helmet
+              </button>
+            </div>
+            <div class="card">
+              <h3>Steel Helmet</h3>
+              <p>Level 10 required</p>
+              <p>30 XP per helmet</p>
+              <p>Requires: Steel Bar</p>
+              <button class="btn btn-primary" ${userSkill.level < 10 ? 'disabled' : ''} 
+                onclick="game.smithItem('steel_bar', 'steel_helmet', 30, 5000)">
+                Smith Steel Helmet
+              </button>
+            </div>
+            
+            <!-- Armor - Body -->
+            <div class="card">
+              <h3>Bronze Platebody</h3>
+              <p>Level 1 required</p>
+              <p>15 XP per platebody</p>
+              <p>Requires: Bronze Bar</p>
+              <button class="btn btn-primary" onclick="game.smithItem('bronze_bar', 'bronze_platebody', 15, 5000)">
+                Smith Bronze Platebody
+              </button>
+            </div>
+            <div class="card">
+              <h3>Iron Platebody</h3>
+              <p>Level 5 required</p>
+              <p>30 XP per platebody</p>
+              <p>Requires: Iron Bar</p>
+              <button class="btn btn-primary" ${userSkill.level < 5 ? 'disabled' : ''} 
+                onclick="game.smithItem('iron_bar', 'iron_platebody', 30, 6000)">
+                Smith Iron Platebody
+              </button>
+            </div>
+            <div class="card">
+              <h3>Steel Platebody</h3>
+              <p>Level 10 required</p>
+              <p>45 XP per platebody</p>
+              <p>Requires: Steel Bar</p>
+              <button class="btn btn-primary" ${userSkill.level < 10 ? 'disabled' : ''} 
+                onclick="game.smithItem('steel_bar', 'steel_platebody', 45, 7000)">
+                Smith Steel Platebody
               </button>
             </div>
           </div>
@@ -1567,6 +1827,16 @@ class BMTIdle {
           </div>
         </div>
         
+        <div class="card">
+          <div class="card-header">
+            <h3>🔧 Debug Tools</h3>
+          </div>
+          <p class="text-muted">Debug functions for testing</p>
+          <button class="btn btn-secondary" onclick="game.giveStartingEquipment()" style="margin-top: 1rem;">
+            ⚔️ Give Starting Equipment
+          </button>
+        </div>
+        
         <div class="card" style="border-color: var(--osrs-red);">
           <div class="card-header">
             <h3 class="text-red">⚠️ Danger Zone</h3>
@@ -1589,7 +1859,69 @@ class BMTIdle {
           <div class="text-muted">Buy essential items with coins</div>
         </div>
         
-        <div class="grid grid-3">
+        <!-- Equipment Section -->
+        <div class="card" style="margin-bottom: 1rem;">
+          <div class="card-header">
+            <h3>⚔️ Equipment</h3>
+          </div>
+          <div class="grid grid-3">
+            <div class="card">
+              <h3>🗡️ Bronze Sword</h3>
+              <p>Price: 50 coins</p>
+              <p class="text-muted">+2 Attack, +1 Strength</p>
+              <button class="btn btn-primary" onclick="game.buyItem('bronze_sword', 50)">
+                Buy Bronze Sword
+              </button>
+            </div>
+            <div class="card">
+              <h3>⛑️ Bronze Helmet</h3>
+              <p>Price: 30 coins</p>
+              <p class="text-muted">+2 Defence</p>
+              <button class="btn btn-primary" onclick="game.buyItem('bronze_helmet', 30)">
+                Buy Bronze Helmet
+              </button>
+            </div>
+            <div class="card">
+              <h3>🛡️ Bronze Platebody</h3>
+              <p>Price: 80 coins</p>
+              <p class="text-muted">+5 Defence</p>
+              <button class="btn btn-primary" onclick="game.buyItem('bronze_platebody', 80)">
+                Buy Bronze Platebody
+              </button>
+            </div>
+            <div class="card">
+              <h3>💍 Gold Ring</h3>
+              <p>Price: 100 coins</p>
+              <p class="text-muted">+1 Defence</p>
+              <button class="btn btn-primary" onclick="game.buyItem('gold_ring', 100)">
+                Buy Gold Ring
+              </button>
+            </div>
+            <div class="card">
+              <h3>📿 Gold Necklace</h3>
+              <p>Price: 200 coins</p>
+              <p class="text-muted">+1 Attack, +1 Strength</p>
+              <button class="btn btn-primary" onclick="game.buyItem('gold_necklace', 200)">
+                Buy Gold Necklace
+              </button>
+            </div>
+            <div class="card">
+              <h3>🧥 Cape</h3>
+              <p>Price: 50 coins</p>
+              <p class="text-muted">+1 Defence</p>
+              <button class="btn btn-primary" onclick="game.buyItem('cape', 50)">
+                Buy Cape
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Seeds Section -->
+        <div class="card">
+          <div class="card-header">
+            <h3>🌱 Seeds & Supplies</h3>
+          </div>
+          <div class="grid grid-3">
           <div class="card">
             <h3>🌰 Potato Seeds</h3>
             <p>Price: 5 coins each</p>
@@ -2435,8 +2767,9 @@ class BMTIdle {
   }
 
   calculatePlayerDamage(monster) {
-    const playerAttack = this.currentUser.skills.attack.level;
-    const playerStrength = this.currentUser.skills.strength.level;
+    const totalStats = this.calculateTotalStats();
+    const playerAttack = totalStats.attack;
+    const playerStrength = totalStats.strength;
     const monsterDefence = monster.defence;
     
     console.log('Player damage calculation:', {
@@ -2560,8 +2893,10 @@ class BMTIdle {
 
   // Shop System
   buyItem(itemId, price) {
+    console.log('Buying item:', itemId, 'Price:', price, 'Current coins:', this.currentUser.inventory.coins);
+    
     if (this.currentUser.inventory.coins < price) {
-      this.showNotification('Not enough coins!');
+      this.showNotification(`Not enough coins! Need ${price}, have ${this.currentUser.inventory.coins}`);
       return;
     }
     
@@ -2573,6 +2908,25 @@ class BMTIdle {
     
     this.saveUserData();
     this.render();
+  }
+
+  // Give starting equipment to existing users who don't have any
+  giveStartingEquipment() {
+    const hasEquipment = this.currentUser.inventory.bronze_sword || 
+                        this.currentUser.inventory.bronze_helmet || 
+                        this.currentUser.inventory.bronze_platebody;
+    
+    if (!hasEquipment) {
+      console.log('Giving starting equipment to user');
+      this.currentUser.inventory.bronze_sword = 1;
+      this.currentUser.inventory.bronze_helmet = 1;
+      this.currentUser.inventory.bronze_platebody = 1;
+      this.currentUser.inventory.gold_necklace = 1;
+      this.currentUser.inventory.gold_ring = 1;
+      this.currentUser.inventory.cape = 1;
+      this.saveUserData();
+      this.showNotification('Starting equipment added to your inventory!');
+    }
   }
 
   // Inventory interaction methods
@@ -2832,31 +3186,66 @@ class BMTIdle {
   }
 
   getItemIcon(itemId) {
+    // Use SVG images for items that have them, fallback to emojis
+    const svgItems = {
+      // Equipment
+      bronze_sword: 'images/items/bronze_sword.svg',
+      bronze_helmet: 'images/items/bronze_helmet.svg',
+      bronze_platebody: 'images/items/bronze_platebody.svg',
+      gold_ring: 'images/items/gold_ring.svg',
+      gold_necklace: 'images/items/gold_necklace.svg',
+      cape: 'images/items/cape.svg',
+      
+      // Resources
+      logs: 'images/items/logs.svg',
+      copper_ore: 'images/items/copper_ore.svg',
+      iron_ore: 'images/items/iron_ore.svg',
+      
+      // Bars
+      bronze_bar: 'images/items/bronze_bar.svg',
+      
+      // Fish
+      shrimp: 'images/items/shrimp.svg',
+      
+      // Seeds & Crops
+      potato_seed: 'images/items/potato_seed.svg',
+      potato: 'images/items/potato.svg',
+      wheat_seed: 'images/items/wheat_seed.svg',
+      
+      // Supplies
+      vial: 'images/items/vial.svg',
+    };
+    
+    if (svgItems[itemId]) {
+      return `<img src="${svgItems[itemId]}" style="width: 32px; height: 32px;" alt="${itemId}">`;
+    }
+    
+    // Fallback to emojis for items without SVG images
     const icons = {
       // Logs
-      logs: '🪵', oak_logs: '🪵', willow_logs: '🪵', yew_logs: '🌲', magic_logs: '✨',
+      oak_logs: '🪵', willow_logs: '🪵', yew_logs: '🌲', magic_logs: '✨',
       
       // Ores
-      copper_ore: '🟤', tin_ore: '⚪', iron_ore: '🔶', coal: '⚫', 
+      tin_ore: '⚪', coal: '⚫', 
       gold_ore: '🟡', mithril_ore: '🔵',
       
       // Fish
-      shrimp: '🦐', sardine: '🐟', trout: '🐟', salmon: '🐟', 
+      sardine: '🐟', trout: '🐟', salmon: '🐟', 
       lobster: '🦞', shark: '🦈',
       
       // Cooked Food
       cooked_shrimp: '🍤', bread: '🍞', cooked_trout: '🍖',
       
       // Bars
-      bronze_bar: '🟫', iron_bar: '🔸', steel_bar: '⚪', 
+      iron_bar: '🔸', steel_bar: '⚪', 
       gold_bar: '🟨', mithril_bar: '🟦',
       
       // Equipment
-      bronze_sword: '🗡️', iron_sword: '⚔️', steel_sword: '⚔️',
+      iron_sword: '⚔️', steel_sword: '⚔️',
       
       // Seeds and Crops
-      potato_seed: '🌰', wheat_seed: '🌾', herb_seed: '🌿', carrot_seed: '🥕', cabbage_seed: '🥬',
-      potato: '🥔', wheat: '🌾', herb: '🌿', carrot: '🥕', cabbage: '🥬',
+      herb_seed: '🌿', carrot_seed: '🥕', cabbage_seed: '🥬',
+      wheat: '🌾', herb: '🌿', carrot: '🥕', cabbage: '🥬',
       
       // Cooked Foods
       vegetable_stew: '🍲', cabbage_soup: '🍜',
@@ -3462,6 +3851,150 @@ class BMTIdle {
         }, 2000);
       }
     }
+  }
+
+  // Equipment Helper Functions
+  calculateTotalStats() {
+    const baseStats = {
+      attack: this.currentUser.skills.attack?.level || 1,
+      strength: this.currentUser.skills.strength?.level || 1,
+      defence: this.currentUser.skills.defence?.level || 1
+    };
+
+    // Add equipment bonuses
+    Object.values(this.currentUser.equipment).forEach(itemId => {
+      if (itemId && this.gameData.items[itemId]?.stats) {
+        const itemStats = this.gameData.items[itemId].stats;
+        Object.keys(itemStats).forEach(stat => {
+          baseStats[stat] = (baseStats[stat] || 0) + itemStats[stat];
+        });
+      }
+    });
+
+    return baseStats;
+  }
+
+  renderEquippedItem(itemId) {
+    const itemData = this.gameData.items[itemId];
+    if (!itemData) return '<div class="empty-slot">Error</div>';
+    
+    return `
+      <div class="equipped-item">
+        <div class="item-icon">${this.getItemIcon(itemId)}</div>
+        <div class="item-name">${itemData.name}</div>
+        <div class="item-level">Lv.${itemData.level}</div>
+        <button class="btn btn-danger btn-small" onclick="game.unequipItem('${itemId}')" style="margin-top: 4px;">Unequip</button>
+      </div>
+    `;
+  }
+
+  renderEmptySlot(slot) {
+    return `
+      <div class="empty-slot">
+        <div class="empty-icon">+</div>
+        <div class="empty-text">Empty</div>
+      </div>
+    `;
+  }
+
+  openEquipmentSlot(slot) {
+    const selectionModal = document.getElementById('equipment-selection');
+    const selectionTitle = document.getElementById('equipment-selection-title');
+    const selectionContent = document.getElementById('equipment-selection-content');
+    
+    if (!selectionModal) return;
+    
+    selectionTitle.textContent = `Select ${slot.charAt(0).toUpperCase() + slot.slice(1)}`;
+    
+    // Get available equipment for this slot
+    const availableItems = Object.entries(this.currentUser.inventory)
+      .filter(([itemId, quantity]) => {
+        const itemData = this.gameData.items[itemId];
+        return itemData && itemData.slot === slot && quantity > 0;
+      })
+      .map(([itemId, quantity]) => {
+        const itemData = this.gameData.items[itemId];
+        const canEquip = this.canEquipItem(itemId);
+        
+        return `
+          <div class="equipment-item-card card ${!canEquip ? 'disabled-card' : ''}" onclick="${canEquip ? `game.equipItem('${itemId}')` : ''}">
+            <div class="item-icon">${this.getItemIcon(itemId)}</div>
+            <div class="item-name">${itemData.name}</div>
+            <div class="item-level">Level ${itemData.level}</div>
+            <div class="item-stats">
+              ${Object.entries(itemData.stats || {}).map(([stat, value]) => 
+                `<div class="stat">${stat}: +${value}</div>`
+              ).join('')}
+            </div>
+            <div class="item-quantity">x${quantity}</div>
+            ${!canEquip ? '<div class="text-red">Level too low</div>' : ''}
+          </div>
+        `;
+      }).join('');
+    
+    selectionContent.innerHTML = availableItems || '<div class="text-muted text-center" style="padding: 2rem;">No equipment available for this slot</div>';
+    selectionModal.style.display = 'block';
+  }
+
+  closeEquipmentSelection() {
+    const selectionModal = document.getElementById('equipment-selection');
+    if (selectionModal) {
+      selectionModal.style.display = 'none';
+    }
+  }
+
+  canEquipItem(itemId) {
+    const itemData = this.gameData.items[itemId];
+    if (!itemData || !itemData.level) return true;
+    
+    // Check if player has required level in the relevant skill
+    const requiredLevel = itemData.level;
+    const skillLevel = this.currentUser.skills.attack?.level || 1; // Default to attack level
+    
+    return skillLevel >= requiredLevel;
+  }
+
+  equipItem(itemId) {
+    const itemData = this.gameData.items[itemId];
+    if (!itemData || !itemData.slot) return;
+    
+    const slot = itemData.slot;
+    
+    // Unequip current item if any
+    if (this.currentUser.equipment[slot]) {
+      this.unequipItem(this.currentUser.equipment[slot]);
+    }
+    
+    // Equip new item
+    this.currentUser.equipment[slot] = itemId;
+    
+    // Remove from inventory
+    this.currentUser.inventory[itemId]--;
+    if (this.currentUser.inventory[itemId] === 0) {
+      delete this.currentUser.inventory[itemId];
+    }
+    
+    this.saveUserData();
+    this.render();
+    this.closeEquipmentSelection();
+    this.showNotification(`Equipped ${itemData.name}!`);
+  }
+
+  unequipItem(itemId) {
+    const itemData = this.gameData.items[itemId];
+    if (!itemData || !itemData.slot) return;
+    
+    const slot = itemData.slot;
+    
+    // Remove from equipment
+    delete this.currentUser.equipment[slot];
+    
+    // Add back to inventory
+    this.currentUser.inventory[itemId] = (this.currentUser.inventory[itemId] || 0) + 1;
+    
+    this.saveUserData();
+    this.render();
+    this.showNotification(`Unequipped ${itemData.name}!`);
   }
 }
 

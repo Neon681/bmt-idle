@@ -1,0 +1,14 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="wheatGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#DAA520;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#B8860B;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Wheat seed -->
+  <ellipse cx="16" cy="16" rx="5" ry="3" fill="url(#wheatGrad)"/>
+  <!-- Seed texture -->
+  <ellipse cx="16" cy="16" rx="3" ry="1.5" fill="#B8860B" opacity="0.4"/>
+  <circle cx="14" cy="15" r="0.8" fill="#DAA520" opacity="0.6"/>
+  <circle cx="18" cy="17" r="0.6" fill="#DAA520" opacity="0.6"/>
+</svg>
