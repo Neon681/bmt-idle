@@ -536,16 +536,45 @@ class BMTIdle {
 
   renderHeader() {
     const coins = this.currentUser.inventory.coins || 0;
+    const training = this.currentUser.currentTraining;
+    
     return `
       <div class="game-header">
         <div class="header-left">
           <h1 class="page-title">${this.getPageTitle()}</h1>
         </div>
+        
+        <!-- Action Timer - Center -->
+        <div class="header-center">
+          ${training ? this.renderActionTimer() : ''}
+        </div>
+        
         <div class="header-right">
           <div class="coins-display" id="coins-display-header">
             <span class="coins-icon">🪙</span>
             <span class="coins-amount">${coins.toLocaleString()}</span>
           </div>
+        </div>
+      </div>
+    `;
+  }
+
+  renderActionTimer() {
+    const training = this.currentUser.currentTraining;
+    if (!training) return '';
+    
+    const skillName = this.gameData.skills[training.skill]?.name || training.skill;
+    const activityName = training.activity || 'Training';
+    
+    return `
+      <div class="header-action-timer">
+        <div class="timer-skill">${this.getSkillIcon(training.skill)} ${skillName}</div>
+        <div class="timer-activity">${activityName}</div>
+        <div class="timer-bar-container">
+          <div class="timer-bar">
+            <div class="timer-fill" id="header-timer-fill"></div>
+          </div>
+          <div class="timer-text" id="header-timer-text">0.0s</div>
         </div>
       </div>
     `;
@@ -3185,6 +3214,27 @@ class BMTIdle {
     return `${hours}h`;
   }
 
+  getSkillIcon(skillId) {
+    const skillIcons = {
+      woodcutting: '🪓',
+      mining: '⛏️',
+      fishing: '🎣',
+      farming: '🌱',
+      smelting: '🔥',
+      smithing: '🔨',
+      cooking: '🍳',
+      alchemy: '🧪',
+      enchanting: '✨',
+      attack: '⚔️',
+      strength: '💪',
+      defence: '🛡️',
+      ranged: '🏹',
+      magic: '🔮',
+      hitpoints: '❤️'
+    };
+    return skillIcons[skillId] || '📊';
+  }
+
   getItemIcon(itemId) {
     // Use SVG images for items that have them, fallback to emojis
     const svgItems = {
@@ -3339,23 +3389,15 @@ class BMTIdle {
   showNotification(message) {
     // Simple notification system
     const notification = document.createElement('div');
-    notification.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: var(--osrs-gold);
-      color: var(--osrs-darker);
-      padding: 12px 20px;
-      border-radius: 6px;
-      font-weight: 500;
-      z-index: 1000;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    `;
+    notification.className = 'notification';
     notification.textContent = message;
     document.body.appendChild(notification);
     
     setTimeout(() => {
-      notification.remove();
+      notification.style.animation = 'slideInFromRight 0.3s ease-out reverse';
+      setTimeout(() => {
+        notification.remove();
+      }, 300);
     }, 3000);
   }
 
@@ -3538,6 +3580,10 @@ class BMTIdle {
     const actionTimer = document.getElementById('action-timer');
     const skillActionTimer = document.getElementById('skill-action-timer');
     
+    // Update header timer
+    const headerTimerFill = document.getElementById('header-timer-fill');
+    const headerTimerText = document.getElementById('header-timer-text');
+    
     if (actionProgressBar) {
       actionProgressBar.style.width = actionProgress + '%';
     }
@@ -3549,6 +3595,14 @@ class BMTIdle {
     }
     if (skillActionTimer) {
       skillActionTimer.textContent = actionTimeElapsed.toFixed(1);
+    }
+    
+    // Update header timer
+    if (headerTimerFill) {
+      headerTimerFill.style.width = actionProgress + '%';
+    }
+    if (headerTimerText) {
+      headerTimerText.textContent = `${actionTimeElapsed.toFixed(1)}s`;
     }
     
     // Update combat timer (if in combat)

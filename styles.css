@@ -80,7 +80,6 @@
 /* Game Header */
 .game-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   padding: 1rem var(--gap);
   background: var(--bg-tertiary);
@@ -89,10 +88,25 @@
   position: sticky;
   top: 0;
   z-index: 100;
+  gap: 1rem;
 }
 
 .header-left {
   flex: 1;
+}
+
+.header-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+}
+
+.header-right {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
 }
 
 .page-title {
@@ -103,10 +117,62 @@
   margin: 0;
 }
 
-.header-right {
+
+/* Header Action Timer */
+.header-action-timer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--osrs-gold);
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  min-width: 200px;
+  backdrop-filter: blur(5px);
+}
+
+.timer-skill {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.2rem;
+}
+
+.timer-activity {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.timer-bar-container {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.timer-bar {
+  flex: 1;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.timer-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--osrs-green) 0%, var(--osrs-gold) 100%);
+  border-radius: 3px;
+  transition: width 0.1s ease;
+  width: 0%;
+}
+
+.timer-text {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 35px;
+  text-align: right;
 }
 
 .coins-display {
@@ -135,10 +201,36 @@
 @media (max-width: 768px) {
   .game-header {
     padding: 0.75rem 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .header-center {
+    order: -1;
+    width: 100%;
+    margin-bottom: 0.5rem;
   }
   
   .page-title {
     font-size: 1.2rem;
+  }
+  
+  .header-action-timer {
+    min-width: 150px;
+    padding: 0.4rem 0.8rem;
+  }
+  
+  .timer-skill {
+    font-size: 0.8rem;
+  }
+  
+  .timer-activity {
+    font-size: 0.7rem;
+  }
+  
+  .timer-text {
+    font-size: 0.7rem;
+    min-width: 30px;
   }
   
   .coins-display {
@@ -147,6 +239,43 @@
   
   .coins-amount {
     font-size: 1rem;
+  }
+}
+
+/* Notifications */
+.notification {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: var(--osrs-gold);
+  color: var(--osrs-darker);
+  padding: 12px 20px;
+  border-radius: 6px;
+  font-weight: 500;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  max-width: 300px;
+  word-wrap: break-word;
+  animation: slideInFromRight 0.3s ease-out;
+}
+
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .notification {
+    bottom: 10px;
+    right: 10px;
+    left: 10px;
+    max-width: none;
   }
 }
 
