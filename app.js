@@ -39,8 +39,7 @@ class BMTIdle {
         }
         
         // Calculate offline progress
-        // Temporarily disabled for debugging
-        // this.calculateOfflineProgress();
+        this.calculateOfflineProgress();
       } else {
         console.log('BMT Idle: No saved user found, showing login page');
       }
@@ -1360,33 +1359,66 @@ class BMTIdle {
           </div>
           
           ${this.currentUser.currentTraining && this.currentUser.currentTraining.skill === 'combat' && this.currentUser.currentMonster ? `
-          <div class="card mb-3" style="background: rgba(255, 215, 0, 0.1); border-color: var(--osrs-gold);">
+          <div class="card mb-3" style="background: linear-gradient(135deg, rgba(139, 0, 0, 0.1) 0%, rgba(255, 215, 0, 0.1) 100%); border-color: var(--osrs-gold);">
             <div class="card-header">
-              <h3>⚔️ Combat Status</h3>
-            </div>
-            <div class="grid grid-2">
-              <div>
-                <div class="text-muted">Fighting</div>
-                <div class="text-gold">${this.gameData.monsters[this.currentUser.currentTraining.monster]?.name || 'Unknown'}</div>
-                <div class="text-muted">Monster HP</div>
-                <div class="text-red" id="monster-hp-display">${this.currentUser.currentMonster?.hp || 0}/${this.currentUser.currentMonster?.maxHp || 0}</div>
-              </div>
-              <div>
-                <div class="text-muted">Attack Speed</div>
-                <div class="text-primary">${this.getPlayerAttackSpeed() / 1000}s</div>
-                <div class="text-muted">Monster Speed</div>
-                <div class="text-red">${(this.gameData.monsters[this.currentUser.currentTraining.monster]?.attackSpeed || 0) / 1000}s</div>
-              </div>
+              <h3>⚔️ Battle Arena</h3>
             </div>
             
-            <!-- Action Timer Bar -->
-            <div style="margin: 1rem 0;">
-              <div class="text-muted" style="font-size: 0.875rem; margin-bottom: 4px;">Next Attack</div>
-              <div class="xp-bar">
-                <div class="xp-progress" id="combat-action-timer" style="width: 0%; background: linear-gradient(90deg, #dc143c 0%, #ff6b6b 100%);"></div>
+            <!-- Battle Scene -->
+            <div class="battle-arena">
+              <!-- Player Side -->
+              <div class="battle-entity player-side">
+                <div class="entity-avatar">
+                  <div class="player-avatar">🛡️</div>
+                  <div class="entity-name">You</div>
+                </div>
+                <div class="entity-stats">
+                  <div class="hp-bar-container">
+                    <div class="hp-label">HP</div>
+                    <div class="hp-bar">
+                      <div class="hp-fill player-hp" id="battle-player-hp-bar" style="width: ${(this.currentUser.currentHp / this.currentUser.maxHp) * 100}%"></div>
+                    </div>
+                    <div class="hp-text" id="battle-player-hp-text">${this.currentUser.currentHp}/${this.currentUser.maxHp}</div>
+                  </div>
+                  <div class="attack-speed">
+                    <span class="stat-icon">⚡</span>
+                    <span>${this.getPlayerAttackSpeed() / 1000}s</span>
+                  </div>
+                </div>
               </div>
-              <div class="text-muted" style="font-size: 0.75rem; margin-top: 4px;">
-                <span id="combat-timer-text">0.0s / ${this.getPlayerAttackSpeed() / 1000}s</span>
+              
+              <!-- VS Divider -->
+              <div class="vs-divider">
+                <div class="vs-text">VS</div>
+                <div class="battle-timer">
+                  <div class="timer-bar">
+                    <div class="timer-fill" id="battle-action-timer" style="width: 0%"></div>
+                  </div>
+                  <div class="timer-text" id="battle-timer-text">0.0s / ${this.getPlayerAttackSpeed() / 1000}s</div>
+                </div>
+              </div>
+              
+              <!-- Monster Side -->
+              <div class="battle-entity monster-side">
+                <div class="entity-avatar">
+                  <div class="monster-avatar">
+                    <img src="./images/monsters/${this.currentUser.currentTraining.monster}.svg" alt="${this.gameData.monsters[this.currentUser.currentTraining.monster]?.name || 'Monster'}" style="width: 48px; height: 48px;">
+                  </div>
+                  <div class="entity-name">${this.gameData.monsters[this.currentUser.currentTraining.monster]?.name || 'Unknown'}</div>
+                </div>
+                <div class="entity-stats">
+                  <div class="hp-bar-container">
+                    <div class="hp-label">HP</div>
+                    <div class="hp-bar">
+                      <div class="hp-fill monster-hp" id="battle-monster-hp-bar" style="width: ${this.currentUser.currentMonster ? (this.currentUser.currentMonster.hp / this.currentUser.currentMonster.maxHp) * 100 : 0}%"></div>
+                    </div>
+                    <div class="hp-text" id="battle-monster-hp-text">${this.currentUser.currentMonster?.hp || 0}/${this.currentUser.currentMonster?.maxHp || 0}</div>
+                  </div>
+                  <div class="attack-speed">
+                    <span class="stat-icon">⚡</span>
+                    <span>${(this.gameData.monsters[this.currentUser.currentTraining.monster]?.attackSpeed || 0) / 1000}s</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1533,6 +1565,16 @@ class BMTIdle {
           <div class="text-center text-muted" style="padding: 2rem;">
             Achievements system coming soon!
           </div>
+        </div>
+        
+        <div class="card" style="border-color: var(--osrs-red);">
+          <div class="card-header">
+            <h3 class="text-red">⚠️ Danger Zone</h3>
+          </div>
+          <p class="text-muted">This will permanently delete your account and all progress. This action cannot be undone!</p>
+          <button class="btn btn-danger" onclick="game.resetAccount()" style="margin-top: 1rem;">
+            🗑️ Reset Account
+          </button>
         </div>
       </div>
     `;
@@ -2409,6 +2451,7 @@ class BMTIdle {
     
     if (Math.random() > accuracy) {
       console.log('Player attack missed!');
+      this.triggerCombatAnimation('player-miss');
       return 0; // Miss
     }
     
@@ -2416,6 +2459,10 @@ class BMTIdle {
     const maxHit = Math.floor(playerStrength / 4) + 1;
     const damage = Math.floor(Math.random() * maxHit) + 1;
     console.log('Player damage calculated:', { maxHit: maxHit, damage: damage });
+    
+    // Trigger combat animations
+    this.triggerCombatAnimation('player-attack');
+    this.showDamageNumber(damage, 'monster');
     
     return damage;
   }
@@ -2428,12 +2475,19 @@ class BMTIdle {
     // Accuracy check
     const accuracy = this.calculateAccuracy(monsterAttack, playerDefence);
     if (Math.random() > accuracy) {
+      this.triggerCombatAnimation('monster-miss');
       return 0; // Miss
     }
     
     // Calculate damage (1 to max hit)
     const maxHit = Math.floor(monsterStrength / 4) + 1;
-    return Math.floor(Math.random() * maxHit) + 1;
+    const damage = Math.floor(Math.random() * maxHit) + 1;
+    
+    // Trigger combat animations
+    this.triggerCombatAnimation('monster-attack');
+    this.showDamageNumber(damage, 'player');
+    
+    return damage;
   }
 
   calculateAccuracy(attackLevel, defenceLevel) {
@@ -2929,24 +2983,29 @@ class BMTIdle {
     // Cap offline time at 24 hours
     const cappedHours = Math.min(hoursOffline, 24);
     
-    // Calculate idle gains based on player's active training
+    // Only calculate offline progress if player was actively training when they logged out
+    if (!this.currentUser.currentTraining) {
+      console.log('No active training when logged out, skipping offline progress');
+      return;
+    }
+    
+    // Calculate idle gains based on the skill they were training
     let totalGains = {};
     let hasGains = false;
     
-    // Check if player has been training skills (based on their current levels)
-    Object.keys(this.currentUser.skills).forEach(skillId => {
-      const skill = this.currentUser.skills[skillId];
-      if (skill.level > 1) {
-        // Calculate idle XP based on skill level (higher levels = better idle rates)
-        const idleXpPerHour = Math.floor(skill.level * 2.5);
-        const totalIdleXp = Math.floor(idleXpPerHour * cappedHours);
-        
-        if (totalIdleXp > 0) {
-          totalGains[skillId] = totalIdleXp;
-          hasGains = true;
-        }
+    const trainingSkill = this.currentUser.currentTraining.skill;
+    if (trainingSkill && this.currentUser.skills[trainingSkill]) {
+      const skill = this.currentUser.skills[trainingSkill];
+      
+      // Calculate idle XP based on the training skill
+      const idleXpPerHour = Math.floor(skill.level * 2.5);
+      const totalIdleXp = Math.floor(idleXpPerHour * cappedHours);
+      
+      if (totalIdleXp > 0) {
+        totalGains[trainingSkill] = totalIdleXp;
+        hasGains = true;
       }
-    });
+    }
     
     // Apply gains and show notification
     if (hasGains) {
@@ -2971,10 +3030,10 @@ class BMTIdle {
         gainsText.push(`Resources: +${idleResources} logs, +${Math.floor(idleResources / 2)} copper ore`);
       }
       
-      // Show offline progress notification
-      setTimeout(() => {
-        this.showOfflineProgressModal(cappedHours, gainsText);
-      }, 1000);
+      // Show offline progress notification (disabled for now)
+      // setTimeout(() => {
+      //   this.showOfflineProgressModal(cappedHours, gainsText);
+      // }, 1000);
     }
     
     this.saveUserData();
@@ -3107,12 +3166,20 @@ class BMTIdle {
     if (training.skill === 'combat') {
       const combatActionProgressBar = document.getElementById('combat-action-timer');
       const combatTimerText = document.getElementById('combat-timer-text');
+      const battleActionTimer = document.getElementById('battle-action-timer');
+      const battleTimerText = document.getElementById('battle-timer-text');
       
       if (combatActionProgressBar) {
         combatActionProgressBar.style.width = actionProgress + '%';
       }
+      if (battleActionTimer) {
+        battleActionTimer.style.width = actionProgress + '%';
+      }
       if (combatTimerText) {
         combatTimerText.textContent = `${actionTimeElapsed.toFixed(1)}s / ${(training.actionTime / 1000).toFixed(1)}s`;
+      }
+      if (battleTimerText) {
+        battleTimerText.textContent = `${actionTimeElapsed.toFixed(1)}s / ${(training.actionTime / 1000).toFixed(1)}s`;
       }
     }
     
@@ -3132,6 +3199,17 @@ class BMTIdle {
       const monsterHpDisplay = document.getElementById('monster-hp-display');
       if (monsterHpDisplay) {
         monsterHpDisplay.textContent = `${this.currentUser.currentMonster.hp}/${this.currentUser.currentMonster.maxHp}`;
+      }
+      
+      // Update battle arena monster HP
+      const battleMonsterHpText = document.getElementById('battle-monster-hp-text');
+      if (battleMonsterHpText) {
+        battleMonsterHpText.textContent = `${this.currentUser.currentMonster.hp}/${this.currentUser.currentMonster.maxHp}`;
+      }
+      
+      const battleMonsterHpBar = document.getElementById('battle-monster-hp-bar');
+      if (battleMonsterHpBar) {
+        battleMonsterHpBar.style.width = `${(this.currentUser.currentMonster.hp / this.currentUser.currentMonster.maxHp) * 100}%`;
       }
     }
     
@@ -3182,6 +3260,17 @@ class BMTIdle {
     const combatHpBar = document.querySelector('#combat-hp-bar');
     if (combatHpBar) {
       combatHpBar.style.width = `${(this.currentUser.currentHp / this.currentUser.maxHp) * 100}%`;
+    }
+    
+    // Update battle arena HP displays
+    const battlePlayerHpText = document.querySelector('#battle-player-hp-text');
+    if (battlePlayerHpText) {
+      battlePlayerHpText.textContent = `${this.currentUser.currentHp}/${this.currentUser.maxHp}`;
+    }
+    
+    const battlePlayerHpBar = document.querySelector('#battle-player-hp-bar');
+    if (battlePlayerHpBar) {
+      battlePlayerHpBar.style.width = `${(this.currentUser.currentHp / this.currentUser.maxHp) * 100}%`;
     }
     
     // Update coins display
@@ -3271,6 +3360,108 @@ class BMTIdle {
         }
       }
     });
+  }
+
+  // Combat Animation Functions
+  triggerCombatAnimation(type) {
+    const battleArena = document.querySelector('.battle-arena');
+    if (!battleArena) return;
+
+    const playerSide = battleArena.querySelector('.player-side');
+    const monsterSide = battleArena.querySelector('.monster-side');
+
+    switch (type) {
+      case 'player-attack':
+        if (playerSide) {
+          playerSide.classList.add('attack-flash');
+          setTimeout(() => playerSide.classList.remove('attack-flash'), 300);
+        }
+        if (monsterSide) {
+          monsterSide.classList.add('monster-hit');
+          setTimeout(() => monsterSide.classList.remove('monster-hit'), 300);
+        }
+        break;
+      
+      case 'monster-attack':
+        if (monsterSide) {
+          monsterSide.classList.add('attack-flash');
+          setTimeout(() => monsterSide.classList.remove('attack-flash'), 300);
+        }
+        if (playerSide) {
+          playerSide.classList.add('player-hit');
+          setTimeout(() => playerSide.classList.remove('player-hit'), 300);
+        }
+        break;
+      
+      case 'player-miss':
+        if (playerSide) {
+          playerSide.classList.add('attack-flash');
+          setTimeout(() => playerSide.classList.remove('attack-flash'), 300);
+        }
+        break;
+      
+      case 'monster-miss':
+        if (monsterSide) {
+          monsterSide.classList.add('attack-flash');
+          setTimeout(() => monsterSide.classList.remove('attack-flash'), 300);
+        }
+        break;
+    }
+  }
+
+  showDamageNumber(damage, target) {
+    const battleArena = document.querySelector('.battle-arena');
+    if (!battleArena) return;
+
+    const damageElement = document.createElement('div');
+    damageElement.textContent = `-${damage}`;
+    damageElement.className = 'damage-number';
+    
+    // Position based on target
+    if (target === 'monster') {
+      const monsterSide = battleArena.querySelector('.monster-side');
+      if (monsterSide) {
+        const rect = monsterSide.getBoundingClientRect();
+        damageElement.style.left = (rect.left + rect.width / 2) + 'px';
+        damageElement.style.top = (rect.top + rect.height / 2) + 'px';
+      }
+    } else {
+      const playerSide = battleArena.querySelector('.player-side');
+      if (playerSide) {
+        const rect = playerSide.getBoundingClientRect();
+        damageElement.style.left = (rect.left + rect.width / 2) + 'px';
+        damageElement.style.top = (rect.top + rect.height / 2) + 'px';
+      }
+    }
+
+    document.body.appendChild(damageElement);
+    
+    // Remove after animation
+    setTimeout(() => {
+      if (damageElement.parentNode) {
+        damageElement.remove();
+      }
+    }, 1000);
+  }
+
+  resetAccount() {
+    if (confirm('Are you sure you want to reset your account? This will permanently delete all your progress and cannot be undone!')) {
+      if (confirm('This is your final warning! Click OK to permanently delete your account.')) {
+        // Clear all saved data
+        localStorage.removeItem('bmtIdle_currentUser');
+        localStorage.removeItem('bmtIdle_gameData');
+        
+        // Show confirmation
+        this.showNotification('Account reset! Redirecting to login...');
+        
+        // Redirect to login after a short delay
+        setTimeout(() => {
+          this.currentUser = null;
+          this.currentPage = 'login';
+          this.render();
+        }, 2000);
+      }
+    }
   }
 }
 

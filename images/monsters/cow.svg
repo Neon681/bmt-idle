@@ -1,0 +1,39 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <!-- Cow Body -->
+  <ellipse cx="32" cy="40" rx="20" ry="15" fill="#ffffff" stroke="#000000" stroke-width="2"/>
+  
+  <!-- Cow Head -->
+  <ellipse cx="32" cy="20" rx="12" ry="10" fill="#ffffff" stroke="#000000" stroke-width="2"/>
+  
+  <!-- Ears -->
+  <ellipse cx="24" cy="15" rx="3" ry="4" fill="#ffffff" stroke="#000000" stroke-width="1"/>
+  <ellipse cx="40" cy="15" rx="3" ry="4" fill="#ffffff" stroke="#000000" stroke-width="1"/>
+  
+  <!-- Eyes -->
+  <circle cx="28" cy="18" r="2" fill="#000000"/>
+  <circle cx="36" cy="18" r="2" fill="#000000"/>
+  
+  <!-- Nose -->
+  <ellipse cx="32" cy="22" rx="2" ry="1" fill="#000000"/>
+  
+  <!-- Mouth -->
+  <path d="M30 25 Q32 27 34 25" stroke="#000000" stroke-width="1" fill="none"/>
+  
+  <!-- Horns -->
+  <path d="M26 12 Q24 8 26 6" stroke="#8b4513" stroke-width="2" fill="none"/>
+  <path d="M38 12 Q40 8 38 6" stroke="#8b4513" stroke-width="2" fill="none"/>
+  
+  <!-- Legs -->
+  <rect x="24" y="50" width="4" height="12" fill="#ffffff" stroke="#000000" stroke-width="1"/>
+  <rect x="28" y="50" width="4" height="12" fill="#ffffff" stroke="#000000" stroke-width="1"/>
+  <rect x="32" y="50" width="4" height="12" fill="#ffffff" stroke="#000000" stroke-width="1"/>
+  <rect x="36" y="50" width="4" height="12" fill="#ffffff" stroke="#000000" stroke-width="1"/>
+  
+  <!-- Tail -->
+  <path d="M50 35 Q55 30 60 35" stroke="#000000" stroke-width="2" fill="none"/>
+  
+  <!-- Spots -->
+  <circle cx="28" cy="35" r="3" fill="#000000"/>
+  <circle cx="40" cy="30" r="2" fill="#000000"/>
+  <circle cx="36" cy="45" r="2" fill="#000000"/>
+</svg>

@@ -1,0 +1,47 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <!-- Skeleton Skull -->
+  <circle cx="32" cy="20" r="12" fill="#f5f5dc" stroke="#d3d3d3" stroke-width="2"/>
+  
+  <!-- Eye Sockets -->
+  <circle cx="28" cy="18" r="3" fill="#000000"/>
+  <circle cx="36" cy="18" r="3" fill="#000000"/>
+  
+  <!-- Nose Hole -->
+  <ellipse cx="32" cy="22" rx="1" ry="2" fill="#000000"/>
+  
+  <!-- Teeth -->
+  <rect x="30" y="25" width="1" height="3" fill="#ffffff"/>
+  <rect x="32" y="25" width="1" height="3" fill="#ffffff"/>
+  <rect x="34" y="25" width="1" height="3" fill="#ffffff"/>
+  
+  <!-- Rib Cage -->
+  <ellipse cx="32" cy="35" rx="15" ry="12" fill="#f5f5dc" stroke="#d3d3d3" stroke-width="2"/>
+  
+  <!-- Rib Bones -->
+  <line x1="20" y1="30" x2="20" y2="40" stroke="#d3d3d3" stroke-width="2"/>
+  <line x1="25" y1="28" x2="25" y2="42" stroke="#d3d3d3" stroke-width="2"/>
+  <line x1="30" y1="26" x2="30" y2="44" stroke="#d3d3d3" stroke-width="2"/>
+  <line x1="34" y1="26" x2="34" y2="44" stroke="#d3d3d3" stroke-width="2"/>
+  <line x1="39" y1="28" x2="39" y2="42" stroke="#d3d3d3" stroke-width="2"/>
+  <line x1="44" y1="30" x2="44" y2="40" stroke="#d3d3d3" stroke-width="2"/>
+  
+  <!-- Arms -->
+  <line x1="20" y1="35" x2="10" y2="45" stroke="#f5f5dc" stroke-width="4"/>
+  <line x1="44" y1="35" x2="54" y2="45" stroke="#f5f5dc" stroke-width="4"/>
+  
+  <!-- Hands -->
+  <circle cx="10" cy="45" r="3" fill="#f5f5dc" stroke="#d3d3d3" stroke-width="1"/>
+  <circle cx="54" cy="45" r="3" fill="#f5f5dc" stroke="#d3d3d3" stroke-width="1"/>
+  
+  <!-- Legs -->
+  <line x1="28" y1="47" x2="28" y2="60" stroke="#f5f5dc" stroke-width="4"/>
+  <line x1="36" y1="47" x2="36" y2="60" stroke="#f5f5dc" stroke-width="4"/>
+  
+  <!-- Feet -->
+  <ellipse cx="28" cy="60" rx="3" ry="2" fill="#f5f5dc" stroke="#d3d3d3" stroke-width="1"/>
+  <ellipse cx="36" cy="60" rx="3" ry="2" fill="#f5f5dc" stroke="#d3d3d3" stroke-width="1"/>
+  
+  <!-- Glowing Eyes Effect -->
+  <circle cx="28" cy="18" r="1" fill="#ff0000" opacity="0.8"/>
+  <circle cx="36" cy="18" r="1" fill="#ff0000" opacity="0.8"/>
+</svg>
