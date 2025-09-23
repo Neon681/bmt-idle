@@ -6,6 +6,11 @@ class BMTIdle {
     try {
       this.currentUser = null;
       this.currentPage = 'login';
+      this.particleContainer = null;
+      this.friends = [];
+      this.chatMessages = [];
+      this.chatInput = '';
+      this.selectedPlayer = null;
       
       console.log('BMT Idle: Loading game data...');
       this.gameData = this.loadGameData();
@@ -38,6 +43,20 @@ class BMTIdle {
           delete this.currentUser.currentTraining;
         }
         
+        // Initialize quest progress for existing users
+        if (!this.currentUser.questProgress) {
+          this.currentUser.questProgress = {
+            firstActivityCompleted: false,
+            firstCombatCompleted: false,
+            firstCraftCompleted: false,
+            activitiesCompleted: 0,
+            monstersDefeated: 0,
+            totalCoinsEarned: 0,
+            questsCompleted: 0
+          };
+          this.saveUserData();
+        }
+        
         // Calculate offline progress
         this.calculateOfflineProgress();
         
@@ -58,6 +77,9 @@ class BMTIdle {
         console.log('BMT Idle: Starting game loops...');
         this.startGameLoops();
       }
+      
+      // Load theme
+      this.loadTheme();
       
       console.log('BMT Idle: Initialization complete!');
     } catch (error) {
@@ -96,25 +118,138 @@ class BMTIdle {
   getDefaultSkills() {
     return {
       // Gathering Skills
-      woodcutting: { name: 'Woodcutting', category: 'gathering', icon: '🪓' },
-      mining: { name: 'Mining', category: 'gathering', icon: '⛏️' },
-      fishing: { name: 'Fishing', category: 'gathering', icon: '🎣' },
-      farming: { name: 'Farming', category: 'gathering', icon: '🌱' },
+      woodcutting: { 
+        name: 'Woodcutting', 
+        category: 'gathering', 
+        icon: '🪓',
+        description: 'Chop trees to gather wood',
+        maxLevel: 99,
+        xpPerLevel: 100
+      },
+      mining: { 
+        name: 'Mining', 
+        category: 'gathering', 
+        icon: '⛏️',
+        description: 'Mine rocks to gather ores and gems',
+        maxLevel: 99,
+        xpPerLevel: 100
+      },
+      fishing: { 
+        name: 'Fishing', 
+        category: 'gathering', 
+        icon: '🎣',
+        description: 'Catch fish from water sources',
+        maxLevel: 99,
+        xpPerLevel: 100
+      },
+      farming: { 
+        name: 'Farming', 
+        category: 'gathering', 
+        icon: '🌾',
+        description: 'Grow crops and herbs',
+        maxLevel: 99,
+        xpPerLevel: 100
+      },
       
       // Production Skills
-      smelting: { name: 'Smelting', category: 'production', icon: '🔥' },
-      smithing: { name: 'Smithing', category: 'production', icon: '🔨' },
-      cooking: { name: 'Cooking', category: 'production', icon: '🍳' },
-      alchemy: { name: 'Alchemy', category: 'production', icon: '⚗️' },
-      enchanting: { name: 'Enchanting', category: 'production', icon: '✨' },
+      smelting: { 
+        name: 'Smelting', 
+        category: 'production', 
+        icon: '🔥',
+        description: 'Smelt ores into bars and ingots',
+        maxLevel: 99,
+        xpPerLevel: 100
+      },
+      smithing: { 
+        name: 'Smithing', 
+        category: 'production', 
+        icon: '🔨',
+        description: 'Craft weapons, armor, and tools',
+        maxLevel: 99,
+        xpPerLevel: 100
+      },
+      cooking: { 
+        name: 'Cooking', 
+        category: 'production', 
+        icon: '🍳',
+        description: 'Cook food to restore health and provide bonuses',
+        maxLevel: 99,
+        xpPerLevel: 100
+      },
+      herblore: { 
+        name: 'Herblore', 
+        category: 'production', 
+        icon: '🧪',
+        description: 'Create potions and magical items',
+        maxLevel: 99,
+        xpPerLevel: 100
+      },
+      crafting: { 
+        name: 'Crafting', 
+        category: 'production', 
+        icon: '✂️',
+        description: 'Create jewelry, clothing, and decorative items',
+        maxLevel: 99,
+        xpPerLevel: 100
+      },
+      runecrafting: { 
+        name: 'Runecrafting', 
+        category: 'production', 
+        icon: '🔮',
+        description: 'Create magical runes and enchantments',
+        maxLevel: 99,
+        xpPerLevel: 100
+      },
       
       // Combat Skills
-      attack: { name: 'Attack', category: 'combat', icon: '⚔️' },
-      strength: { name: 'Strength', category: 'combat', icon: '💪' },
-      defence: { name: 'Defence', category: 'combat', icon: '🛡️' },
-      ranged: { name: 'Ranged', category: 'combat', icon: '🏹' },
-      magic: { name: 'Magic', category: 'combat', icon: '🔮' },
-      hitpoints: { name: 'Hitpoints', category: 'combat', icon: '❤️' }
+      attack: { 
+        name: 'Attack', 
+        category: 'combat', 
+        icon: '⚔️',
+        description: 'Combat skill for accuracy and weapon proficiency',
+        maxLevel: 99,
+        xpPerLevel: 100
+      },
+      strength: { 
+        name: 'Strength', 
+        category: 'combat', 
+        icon: '💪',
+        description: 'Combat skill for damage and carrying capacity',
+        maxLevel: 99,
+        xpPerLevel: 100
+      },
+      defence: { 
+        name: 'Defence', 
+        category: 'combat', 
+        icon: '🛡️',
+        description: 'Combat skill for protection and damage reduction',
+        maxLevel: 99,
+        xpPerLevel: 100
+      },
+      ranged: { 
+        name: 'Ranged', 
+        category: 'combat', 
+        icon: '🏹',
+        description: 'Combat skill for ranged weapons and accuracy',
+        maxLevel: 99,
+        xpPerLevel: 100
+      },
+      magic: { 
+        name: 'Magic', 
+        category: 'combat', 
+        icon: '🔮',
+        description: 'Combat skill for spells and magical abilities',
+        maxLevel: 99,
+        xpPerLevel: 100
+      },
+      hitpoints: { 
+        name: 'Hitpoints', 
+        category: 'combat', 
+        icon: '❤️',
+        description: 'Your health and vitality',
+        maxLevel: 99,
+        xpPerLevel: 100
+      }
     };
   }
 
@@ -129,11 +264,16 @@ class BMTIdle {
       
       // Ores
       copper_ore: { name: 'Copper Ore', category: 'resource', value: 2 },
-      tin_ore: { name: 'Tin Ore', category: 'resource', value: 2 },
       iron_ore: { name: 'Iron Ore', category: 'resource', value: 8 },
       coal: { name: 'Coal', category: 'resource', value: 15 },
-      gold_ore: { name: 'Gold Ore', category: 'resource', value: 25 },
+      silver_ore: { name: 'Silver Ore', category: 'resource', value: 25 },
       mithril_ore: { name: 'Mithril Ore', category: 'resource', value: 40 },
+      gold_ore: { name: 'Gold Ore', category: 'resource', value: 60 },
+      adamant_ore: { name: 'Adamant Ore', category: 'resource', value: 90 },
+      cobalt_ore: { name: 'Cobalt Ore', category: 'resource', value: 130 },
+      rune_ore: { name: 'Rune Ore', category: 'resource', value: 180 },
+      astral_ore: { name: 'Astral Ore', category: 'resource', value: 240 },
+      infernal_ore: { name: 'Infernal Ore', category: 'resource', value: 300 },
       
       // Fish
       shrimp: { name: 'Raw Shrimp', category: 'resource', value: 2 },
@@ -151,47 +291,134 @@ class BMTIdle {
       cabbage_soup: { name: 'Cabbage Soup', category: 'food', value: 25, heals: 12 },
       
       // Bars
-      bronze_bar: { name: 'Bronze Bar', category: 'material', value: 10 },
+      copper_bar: { name: 'Copper Bar', category: 'material', value: 10 },
       iron_bar: { name: 'Iron Bar', category: 'material', value: 25 },
       steel_bar: { name: 'Steel Bar', category: 'material', value: 50 },
-      gold_bar: { name: 'Gold Bar', category: 'material', value: 75 },
+      silver_bar: { name: 'Silver Bar', category: 'material', value: 75 },
       mithril_bar: { name: 'Mithril Bar', category: 'material', value: 100 },
+      gold_bar: { name: 'Gold Bar', category: 'material', value: 150 },
+      adamant_bar: { name: 'Adamant Bar', category: 'material', value: 225 },
+      cobalt_bar: { name: 'Cobalt Bar', category: 'material', value: 325 },
+      rune_bar: { name: 'Rune Bar', category: 'material', value: 450 },
+      astral_bar: { name: 'Astral Bar', category: 'material', value: 600 },
+      infernal_bar: { name: 'Infernal Bar', category: 'material', value: 750 },
       
       // Weapons
-      bronze_sword: { name: 'Bronze Sword', category: 'weapon', slot: 'weapon', value: 50, level: 1, stats: { attack: 2, strength: 1 } },
+      copper_sword: { name: 'Copper Sword', category: 'weapon', slot: 'weapon', value: 50, level: 1, stats: { attack: 2, strength: 1 } },
       iron_sword: { name: 'Iron Sword', category: 'weapon', slot: 'weapon', value: 150, level: 5, stats: { attack: 8, strength: 6 } },
       steel_sword: { name: 'Steel Sword', category: 'weapon', slot: 'weapon', value: 300, level: 10, stats: { attack: 15, strength: 12 } },
+      silver_sword: { name: 'Silver Sword', category: 'weapon', slot: 'weapon', value: 450, level: 15, stats: { attack: 20, strength: 16 } },
       mithril_sword: { name: 'Mithril Sword', category: 'weapon', slot: 'weapon', value: 600, level: 20, stats: { attack: 25, strength: 20 } },
+      gold_sword: { name: 'Gold Sword', category: 'weapon', slot: 'weapon', value: 900, level: 25, stats: { attack: 32, strength: 26 } },
+      adamant_sword: { name: 'Adamant Sword', category: 'weapon', slot: 'weapon', value: 1350, level: 30, stats: { attack: 40, strength: 32 } },
+      cobalt_sword: { name: 'Cobalt Sword', category: 'weapon', slot: 'weapon', value: 1950, level: 35, stats: { attack: 50, strength: 40 } },
+      rune_sword: { name: 'Rune Sword', category: 'weapon', slot: 'weapon', value: 2700, level: 40, stats: { attack: 62, strength: 50 } },
+      astral_sword: { name: 'Astral Sword', category: 'weapon', slot: 'weapon', value: 3600, level: 45, stats: { attack: 76, strength: 62 } },
+      infernal_sword: { name: 'Infernal Sword', category: 'weapon', slot: 'weapon', value: 4500, level: 50, stats: { attack: 92, strength: 76 } },
       
       // Armor - Helmets
-      bronze_helmet: { name: 'Bronze Helmet', category: 'armor', slot: 'helmet', value: 30, level: 1, stats: { defence: 2 } },
+      copper_helmet: { name: 'Copper Helmet', category: 'armor', slot: 'helmet', value: 30, level: 1, stats: { defence: 2 } },
       iron_helmet: { name: 'Iron Helmet', category: 'armor', slot: 'helmet', value: 100, level: 5, stats: { defence: 6 } },
       steel_helmet: { name: 'Steel Helmet', category: 'armor', slot: 'helmet', value: 200, level: 10, stats: { defence: 12 } },
+      silver_helmet: { name: 'Silver Helmet', category: 'armor', slot: 'helmet', value: 300, level: 15, stats: { defence: 16 } },
       mithril_helmet: { name: 'Mithril Helmet', category: 'armor', slot: 'helmet', value: 400, level: 20, stats: { defence: 20 } },
+      gold_helmet: { name: 'Gold Helmet', category: 'armor', slot: 'helmet', value: 600, level: 25, stats: { defence: 26 } },
+      adamant_helmet: { name: 'Adamant Helmet', category: 'armor', slot: 'helmet', value: 900, level: 30, stats: { defence: 32 } },
+      cobalt_helmet: { name: 'Cobalt Helmet', category: 'armor', slot: 'helmet', value: 1300, level: 35, stats: { defence: 40 } },
+      rune_helmet: { name: 'Rune Helmet', category: 'armor', slot: 'helmet', value: 1800, level: 40, stats: { defence: 50 } },
+      astral_helmet: { name: 'Astral Helmet', category: 'armor', slot: 'helmet', value: 2400, level: 45, stats: { defence: 62 } },
+      infernal_helmet: { name: 'Infernal Helmet', category: 'armor', slot: 'helmet', value: 3000, level: 50, stats: { defence: 76 } },
       
       // Armor - Body
-      bronze_platebody: { name: 'Bronze Platebody', category: 'armor', slot: 'body', value: 80, level: 1, stats: { defence: 5 } },
+      copper_platebody: { name: 'Copper Platebody', category: 'armor', slot: 'body', value: 80, level: 1, stats: { defence: 5 } },
       iron_platebody: { name: 'Iron Platebody', category: 'armor', slot: 'body', value: 250, level: 5, stats: { defence: 15 } },
       steel_platebody: { name: 'Steel Platebody', category: 'armor', slot: 'body', value: 500, level: 10, stats: { defence: 30 } },
+      silver_platebody: { name: 'Silver Platebody', category: 'armor', slot: 'body', value: 750, level: 15, stats: { defence: 40 } },
       mithril_platebody: { name: 'Mithril Platebody', category: 'armor', slot: 'body', value: 1000, level: 20, stats: { defence: 50 } },
+      gold_platebody: { name: 'Gold Platebody', category: 'armor', slot: 'body', value: 1500, level: 25, stats: { defence: 65 } },
+      adamant_platebody: { name: 'Adamant Platebody', category: 'armor', slot: 'body', value: 2250, level: 30, stats: { defence: 80 } },
+      cobalt_platebody: { name: 'Cobalt Platebody', category: 'armor', slot: 'body', value: 3250, level: 35, stats: { defence: 100 } },
+      rune_platebody: { name: 'Rune Platebody', category: 'armor', slot: 'body', value: 4500, level: 40, stats: { defence: 125 } },
+      astral_platebody: { name: 'Astral Platebody', category: 'armor', slot: 'body', value: 6000, level: 45, stats: { defence: 155 } },
+      infernal_platebody: { name: 'Infernal Platebody', category: 'armor', slot: 'body', value: 7500, level: 50, stats: { defence: 190 } },
       
       // Armor - Legs
-      bronze_platelegs: { name: 'Bronze Platelegs', category: 'armor', slot: 'legs', value: 60, level: 1, stats: { defence: 3 } },
+      copper_platelegs: { name: 'Copper Platelegs', category: 'armor', slot: 'legs', value: 60, level: 1, stats: { defence: 3 } },
       iron_platelegs: { name: 'Iron Platelegs', category: 'armor', slot: 'legs', value: 200, level: 5, stats: { defence: 12 } },
       steel_platelegs: { name: 'Steel Platelegs', category: 'armor', slot: 'legs', value: 400, level: 10, stats: { defence: 24 } },
+      silver_platelegs: { name: 'Silver Platelegs', category: 'armor', slot: 'legs', value: 600, level: 15, stats: { defence: 32 } },
       mithril_platelegs: { name: 'Mithril Platelegs', category: 'armor', slot: 'legs', value: 800, level: 20, stats: { defence: 40 } },
+      gold_platelegs: { name: 'Gold Platelegs', category: 'armor', slot: 'legs', value: 1200, level: 25, stats: { defence: 52 } },
+      adamant_platelegs: { name: 'Adamant Platelegs', category: 'armor', slot: 'legs', value: 1800, level: 30, stats: { defence: 64 } },
+      cobalt_platelegs: { name: 'Cobalt Platelegs', category: 'armor', slot: 'legs', value: 2600, level: 35, stats: { defence: 80 } },
+      rune_platelegs: { name: 'Rune Platelegs', category: 'armor', slot: 'legs', value: 3600, level: 40, stats: { defence: 100 } },
+      astral_platelegs: { name: 'Astral Platelegs', category: 'armor', slot: 'legs', value: 4800, level: 45, stats: { defence: 124 } },
+      infernal_platelegs: { name: 'Infernal Platelegs', category: 'armor', slot: 'legs', value: 6000, level: 50, stats: { defence: 152 } },
       
       // Armor - Boots
-      bronze_boots: { name: 'Bronze Boots', category: 'armor', slot: 'boots', value: 20, level: 1, stats: { defence: 1 } },
+      copper_boots: { name: 'Copper Boots', category: 'armor', slot: 'boots', value: 20, level: 1, stats: { defence: 1 } },
       iron_boots: { name: 'Iron Boots', category: 'armor', slot: 'boots', value: 80, level: 5, stats: { defence: 4 } },
       steel_boots: { name: 'Steel Boots', category: 'armor', slot: 'boots', value: 160, level: 10, stats: { defence: 8 } },
+      silver_boots: { name: 'Silver Boots', category: 'armor', slot: 'boots', value: 240, level: 15, stats: { defence: 12 } },
       mithril_boots: { name: 'Mithril Boots', category: 'armor', slot: 'boots', value: 320, level: 20, stats: { defence: 16 } },
+      gold_boots: { name: 'Gold Boots', category: 'armor', slot: 'boots', value: 480, level: 25, stats: { defence: 20 } },
+      adamant_boots: { name: 'Adamant Boots', category: 'armor', slot: 'boots', value: 720, level: 30, stats: { defence: 24 } },
+      cobalt_boots: { name: 'Cobalt Boots', category: 'armor', slot: 'boots', value: 1040, level: 35, stats: { defence: 30 } },
+      rune_boots: { name: 'Rune Boots', category: 'armor', slot: 'boots', value: 1440, level: 40, stats: { defence: 38 } },
+      astral_boots: { name: 'Astral Boots', category: 'armor', slot: 'boots', value: 1920, level: 45, stats: { defence: 48 } },
+      infernal_boots: { name: 'Infernal Boots', category: 'armor', slot: 'boots', value: 2400, level: 50, stats: { defence: 60 } },
       
       // Armor - Gloves
-      bronze_gloves: { name: 'Bronze Gloves', category: 'armor', slot: 'gloves', value: 15, level: 1, stats: { defence: 1 } },
+      copper_gloves: { name: 'Copper Gloves', category: 'armor', slot: 'gloves', value: 15, level: 1, stats: { defence: 1 } },
       iron_gloves: { name: 'Iron Gloves', category: 'armor', slot: 'gloves', value: 60, level: 5, stats: { defence: 3 } },
       steel_gloves: { name: 'Steel Gloves', category: 'armor', slot: 'gloves', value: 120, level: 10, stats: { defence: 6 } },
+      silver_gloves: { name: 'Silver Gloves', category: 'armor', slot: 'gloves', value: 180, level: 15, stats: { defence: 9 } },
       mithril_gloves: { name: 'Mithril Gloves', category: 'armor', slot: 'gloves', value: 240, level: 20, stats: { defence: 12 } },
+      gold_gloves: { name: 'Gold Gloves', category: 'armor', slot: 'gloves', value: 360, level: 25, stats: { defence: 15 } },
+      adamant_gloves: { name: 'Adamant Gloves', category: 'armor', slot: 'gloves', value: 540, level: 30, stats: { defence: 18 } },
+      cobalt_gloves: { name: 'Cobalt Gloves', category: 'armor', slot: 'gloves', value: 780, level: 35, stats: { defence: 22 } },
+      rune_gloves: { name: 'Rune Gloves', category: 'armor', slot: 'gloves', value: 1080, level: 40, stats: { defence: 28 } },
+      astral_gloves: { name: 'Astral Gloves', category: 'armor', slot: 'gloves', value: 1440, level: 45, stats: { defence: 36 } },
+      infernal_gloves: { name: 'Infernal Gloves', category: 'armor', slot: 'gloves', value: 1800, level: 50, stats: { defence: 45 } },
+      
+      // Tools - Pickaxes
+      copper_pickaxe: { name: 'Copper Pickaxe', category: 'tool', slot: 'tool', value: 25, level: 1, stats: { mining: 1 } },
+      iron_pickaxe: { name: 'Iron Pickaxe', category: 'tool', slot: 'tool', value: 75, level: 5, stats: { mining: 2 } },
+      steel_pickaxe: { name: 'Steel Pickaxe', category: 'tool', slot: 'tool', value: 150, level: 10, stats: { mining: 3 } },
+      silver_pickaxe: { name: 'Silver Pickaxe', category: 'tool', slot: 'tool', value: 225, level: 15, stats: { mining: 4 } },
+      mithril_pickaxe: { name: 'Mithril Pickaxe', category: 'tool', slot: 'tool', value: 300, level: 20, stats: { mining: 5 } },
+      gold_pickaxe: { name: 'Gold Pickaxe', category: 'tool', slot: 'tool', value: 450, level: 25, stats: { mining: 6 } },
+      adamant_pickaxe: { name: 'Adamant Pickaxe', category: 'tool', slot: 'tool', value: 675, level: 30, stats: { mining: 7 } },
+      cobalt_pickaxe: { name: 'Cobalt Pickaxe', category: 'tool', slot: 'tool', value: 975, level: 35, stats: { mining: 8 } },
+      rune_pickaxe: { name: 'Rune Pickaxe', category: 'tool', slot: 'tool', value: 1350, level: 40, stats: { mining: 9 } },
+      astral_pickaxe: { name: 'Astral Pickaxe', category: 'tool', slot: 'tool', value: 1800, level: 45, stats: { mining: 10 } },
+      infernal_pickaxe: { name: 'Infernal Pickaxe', category: 'tool', slot: 'tool', value: 2250, level: 50, stats: { mining: 12 } },
+      
+      // Tools - Axes
+      copper_axe: { name: 'Copper Axe', category: 'tool', slot: 'tool', value: 25, level: 1, stats: { woodcutting: 1 } },
+      iron_axe: { name: 'Iron Axe', category: 'tool', slot: 'tool', value: 75, level: 5, stats: { woodcutting: 2 } },
+      steel_axe: { name: 'Steel Axe', category: 'tool', slot: 'tool', value: 150, level: 10, stats: { woodcutting: 3 } },
+      silver_axe: { name: 'Silver Axe', category: 'tool', slot: 'tool', value: 225, level: 15, stats: { woodcutting: 4 } },
+      mithril_axe: { name: 'Mithril Axe', category: 'tool', slot: 'tool', value: 300, level: 20, stats: { woodcutting: 5 } },
+      gold_axe: { name: 'Gold Axe', category: 'tool', slot: 'tool', value: 450, level: 25, stats: { woodcutting: 6 } },
+      adamant_axe: { name: 'Adamant Axe', category: 'tool', slot: 'tool', value: 675, level: 30, stats: { woodcutting: 7 } },
+      cobalt_axe: { name: 'Cobalt Axe', category: 'tool', slot: 'tool', value: 975, level: 35, stats: { woodcutting: 8 } },
+      rune_axe: { name: 'Rune Axe', category: 'tool', slot: 'tool', value: 1350, level: 40, stats: { woodcutting: 9 } },
+      astral_axe: { name: 'Astral Axe', category: 'tool', slot: 'tool', value: 1800, level: 45, stats: { woodcutting: 10 } },
+      infernal_axe: { name: 'Infernal Axe', category: 'tool', slot: 'tool', value: 2250, level: 50, stats: { woodcutting: 12 } },
+      
+      // Tools - Fishing Rods
+      copper_fishing_rod: { name: 'Copper Fishing Rod', category: 'tool', slot: 'tool', value: 30, level: 1, stats: { fishing: 1 } },
+      iron_fishing_rod: { name: 'Iron Fishing Rod', category: 'tool', slot: 'tool', value: 90, level: 5, stats: { fishing: 2 } },
+      steel_fishing_rod: { name: 'Steel Fishing Rod', category: 'tool', slot: 'tool', value: 180, level: 10, stats: { fishing: 3 } },
+      silver_fishing_rod: { name: 'Silver Fishing Rod', category: 'tool', slot: 'tool', value: 270, level: 15, stats: { fishing: 4 } },
+      mithril_fishing_rod: { name: 'Mithril Fishing Rod', category: 'tool', slot: 'tool', value: 360, level: 20, stats: { fishing: 5 } },
+      gold_fishing_rod: { name: 'Gold Fishing Rod', category: 'tool', slot: 'tool', value: 540, level: 25, stats: { fishing: 6 } },
+      adamant_fishing_rod: { name: 'Adamant Fishing Rod', category: 'tool', slot: 'tool', value: 810, level: 30, stats: { fishing: 7 } },
+      cobalt_fishing_rod: { name: 'Cobalt Fishing Rod', category: 'tool', slot: 'tool', value: 1170, level: 35, stats: { fishing: 8 } },
+      rune_fishing_rod: { name: 'Rune Fishing Rod', category: 'tool', slot: 'tool', value: 1620, level: 40, stats: { fishing: 9 } },
+      astral_fishing_rod: { name: 'Astral Fishing Rod', category: 'tool', slot: 'tool', value: 2160, level: 45, stats: { fishing: 10 } },
+      infernal_fishing_rod: { name: 'Infernal Fishing Rod', category: 'tool', slot: 'tool', value: 2700, level: 50, stats: { fishing: 12 } },
       
       // Jewelry - Necklaces
       gold_necklace: { name: 'Gold Necklace', category: 'jewelry', slot: 'necklace', value: 200, level: 1, stats: { attack: 1, strength: 1 } },
@@ -232,8 +459,53 @@ class BMTIdle {
       xp_boost_gem: { name: 'XP Boost Gem', category: 'enchantment', value: 100, effect: 'xp_boost' },
       speed_boost_gem: { name: 'Speed Boost Gem', category: 'enchantment', value: 150, effect: 'speed_boost' },
       
-      // Utilities
+      // Fish
+      shrimp: { name: 'Shrimp', category: 'food', value: 2, heals: 1 },
+      sardine: { name: 'Sardine', category: 'food', value: 5, heals: 2 },
+      salmon: { name: 'Salmon', category: 'food', value: 15, heals: 5 },
+      lobster: { name: 'Lobster', category: 'food', value: 25, heals: 8 },
+      shark: { name: 'Shark', category: 'food', value: 50, heals: 15 },
+      
+      // Cooked Food
+      cooked_shrimp: { name: 'Cooked Shrimp', category: 'food', value: 3, heals: 2 },
+      cooked_sardine: { name: 'Cooked Sardine', category: 'food', value: 8, heals: 3 },
+      cooked_salmon: { name: 'Cooked Salmon', category: 'food', value: 25, heals: 8 },
+      cooked_lobster: { name: 'Cooked Lobster', category: 'food', value: 40, heals: 12 },
+      cooked_shark: { name: 'Cooked Shark', category: 'food', value: 80, heals: 20 },
+      
+      // Herblore Materials
       vial: { name: 'Vial', category: 'resource', value: 1 },
+      clean_herb: { name: 'Clean Herb', category: 'resource', value: 5 },
+      grimy_herb: { name: 'Grimy Herb', category: 'resource', value: 3 },
+      
+      // Potions
+      health_potion: { name: 'Health Potion', category: 'potion', value: 20, heals: 25 },
+      strength_potion: { name: 'Strength Potion', category: 'potion', value: 30, effect: 'strength_boost' },
+      magic_potion: { name: 'Magic Potion', category: 'potion', value: 25, effect: 'magic_boost' },
+      
+      // Crafting Materials
+      leather: { name: 'Leather', category: 'resource', value: 3 },
+      thread: { name: 'Thread', category: 'resource', value: 1 },
+      gem: { name: 'Gem', category: 'resource', value: 10 },
+      string: { name: 'String', category: 'resource', value: 2 },
+      
+      // Jewelry
+      silver_ring: { name: 'Silver Ring', category: 'jewelry', value: 25 },
+      diamond_ring: { name: 'Diamond Ring', category: 'jewelry', value: 100 },
+      emerald_ring: { name: 'Emerald Ring', category: 'jewelry', value: 50 },
+      sapphire_ring: { name: 'Sapphire Ring', category: 'jewelry', value: 75 },
+      
+      // Runes
+      air_rune: { name: 'Air Rune', category: 'rune', value: 2 },
+      fire_rune: { name: 'Fire Rune', category: 'rune', value: 3 },
+      water_rune: { name: 'Water Rune', category: 'rune', value: 2 },
+      earth_rune: { name: 'Earth Rune', category: 'rune', value: 3 },
+      mind_rune: { name: 'Mind Rune', category: 'rune', value: 5 },
+      body_rune: { name: 'Body Rune', category: 'rune', value: 8 },
+      chaos_rune: { name: 'Chaos Rune', category: 'rune', value: 15 },
+      death_rune: { name: 'Death Rune', category: 'rune', value: 25 },
+      
+      // Utilities
       
       // Currency
       coins: { name: 'Coins', category: 'currency', value: 1 }
@@ -242,6 +514,7 @@ class BMTIdle {
 
   getDefaultMonsters() {
     return {
+      // Low Level Monsters (1-10)
       goblin: { 
         name: 'Goblin', 
         level: 2, 
@@ -280,6 +553,84 @@ class BMTIdle {
           coins: { min: 8, max: 20 }
         }
       },
+      rat: {
+        name: 'Giant Rat',
+        level: 1,
+        hp: 8,
+        maxHp: 8,
+        attack: 1,
+        strength: 1,
+        defence: 0,
+        attackSpeed: 3000, // 3 seconds - fast but weak
+        xp: {
+          attack: 2,
+          strength: 2,
+          defence: 2,
+          hitpoints: 2
+        },
+        loot: {
+          coins: { min: 2, max: 8 }
+        }
+      },
+      chicken: {
+        name: 'Wild Chicken',
+        level: 1,
+        hp: 6,
+        maxHp: 6,
+        attack: 1,
+        strength: 1,
+        defence: 0,
+        attackSpeed: 2500, // 2.5 seconds - very fast
+        xp: {
+          attack: 1,
+          strength: 1,
+          defence: 1,
+          hitpoints: 1
+        },
+        loot: {
+          coins: { min: 1, max: 5 }
+        }
+      },
+      spider: {
+        name: 'Giant Spider',
+        level: 3,
+        hp: 15,
+        maxHp: 15,
+        attack: 2,
+        strength: 2,
+        defence: 1,
+        attackSpeed: 3500, // 3.5 seconds
+        xp: {
+          attack: 5,
+          strength: 5,
+          defence: 5,
+          hitpoints: 5
+        },
+        loot: {
+          coins: { min: 6, max: 18 }
+        }
+      },
+      wolf: {
+        name: 'Wild Wolf',
+        level: 5,
+        hp: 25,
+        maxHp: 25,
+        attack: 4,
+        strength: 4,
+        defence: 2,
+        attackSpeed: 3000, // 3 seconds - fast and strong
+        xp: {
+          attack: 8,
+          strength: 8,
+          defence: 8,
+          hitpoints: 8
+        },
+        loot: {
+          coins: { min: 12, max: 25 }
+        }
+      },
+      
+      // Mid Level Monsters (10-25)
       skeleton: { 
         name: 'Skeleton', 
         level: 15, 
@@ -297,6 +648,160 @@ class BMTIdle {
         },
         loot: {
           coins: { min: 15, max: 35 }
+        }
+      },
+      orc: {
+        name: 'Orc Warrior',
+        level: 12,
+        hp: 40,
+        maxHp: 40,
+        attack: 10,
+        strength: 12,
+        defence: 6,
+        attackSpeed: 4000, // 4 seconds - slower but hits hard
+        xp: {
+          attack: 10,
+          strength: 10,
+          defence: 10,
+          hitpoints: 10
+        },
+        loot: {
+          coins: { min: 20, max: 40 }
+        }
+      },
+      troll: {
+        name: 'Cave Troll',
+        level: 18,
+        hp: 60,
+        maxHp: 60,
+        attack: 15,
+        strength: 18,
+        defence: 10,
+        attackSpeed: 4500, // 4.5 seconds - slow but very strong
+        xp: {
+          attack: 15,
+          strength: 15,
+          defence: 15,
+          hitpoints: 15
+        },
+        loot: {
+          coins: { min: 30, max: 60 }
+        }
+      },
+      dark_wizard: {
+        name: 'Dark Wizard',
+        level: 20,
+        hp: 45,
+        maxHp: 45,
+        attack: 18,
+        strength: 8,
+        defence: 12,
+        attackSpeed: 3000, // 3 seconds - fast magic attacks
+        xp: {
+          attack: 18,
+          strength: 18,
+          defence: 18,
+          hitpoints: 18
+        },
+        loot: {
+          coins: { min: 25, max: 50 }
+        }
+      },
+      bandit: {
+        name: 'Highway Bandit',
+        level: 22,
+        hp: 50,
+        maxHp: 50,
+        attack: 16,
+        strength: 14,
+        defence: 14,
+        attackSpeed: 3500, // 3.5 seconds - balanced stats
+        xp: {
+          attack: 20,
+          strength: 20,
+          defence: 20,
+          hitpoints: 20
+        },
+        loot: {
+          coins: { min: 35, max: 70 }
+        }
+      },
+      
+      // High Level Monsters (25+)
+      dragon: {
+        name: 'Young Dragon',
+        level: 30,
+        hp: 100,
+        maxHp: 100,
+        attack: 25,
+        strength: 30,
+        defence: 20,
+        attackSpeed: 5000, // 5 seconds - slow but devastating
+        xp: {
+          attack: 30,
+          strength: 30,
+          defence: 30,
+          hitpoints: 30
+        },
+        loot: {
+          coins: { min: 100, max: 200 }
+        }
+      },
+      demon: {
+        name: 'Lesser Demon',
+        level: 35,
+        hp: 120,
+        maxHp: 120,
+        attack: 30,
+        strength: 35,
+        defence: 25,
+        attackSpeed: 4000, // 4 seconds
+        xp: {
+          attack: 35,
+          strength: 35,
+          defence: 35,
+          hitpoints: 35
+        },
+        loot: {
+          coins: { min: 150, max: 300 }
+        }
+      },
+      lich: {
+        name: 'Ancient Lich',
+        level: 40,
+        hp: 80,
+        maxHp: 80,
+        attack: 40,
+        strength: 20,
+        defence: 35,
+        attackSpeed: 3000, // 3 seconds - very fast magic
+        xp: {
+          attack: 40,
+          strength: 40,
+          defence: 40,
+          hitpoints: 40
+        },
+        loot: {
+          coins: { min: 200, max: 400 }
+        }
+      },
+      giant: {
+        name: 'Mountain Giant',
+        level: 45,
+        hp: 200,
+        maxHp: 200,
+        attack: 35,
+        strength: 50,
+        defence: 30,
+        attackSpeed: 6000, // 6 seconds - very slow but massive damage
+        xp: {
+          attack: 45,
+          strength: 45,
+          defence: 45,
+          hitpoints: 45
+        },
+        loot: {
+          coins: { min: 300, max: 600 }
         }
       }
     };
@@ -342,9 +847,9 @@ class BMTIdle {
         herb_seed: 1,
         vial: 10,
         // Starting equipment
-        bronze_sword: 1,
-        bronze_helmet: 1,
-        bronze_platebody: 1,
+        copper_sword: 1,
+        copper_helmet: 1,
+        copper_platebody: 1,
         gold_necklace: 1,
         gold_ring: 1,
         cape: 1
@@ -367,6 +872,15 @@ class BMTIdle {
       // Progress
       completedQuests: [],
       achievements: [],
+      questProgress: {
+        firstActivityCompleted: false,
+        firstCombatCompleted: false,
+        firstCraftCompleted: false,
+        activitiesCompleted: 0,
+        monstersDefeated: 0,
+        totalCoinsEarned: 0,
+        questsCompleted: 0
+      },
       
       // Social
       guild: null,
@@ -541,7 +1055,7 @@ class BMTIdle {
     return `
       <div class="game-header">
         <div class="header-left">
-          <h1 class="page-title">${this.getPageTitle()}</h1>
+          <!-- Space for future QoL features -->
         </div>
         
         <!-- Action Timer - Center -->
@@ -568,8 +1082,13 @@ class BMTIdle {
     
     return `
       <div class="header-action-timer">
-        <div class="timer-skill">${this.getSkillIcon(training.skill)} ${skillName}</div>
-        <div class="timer-activity">${activityName}</div>
+        <div class="timer-header">
+          <div class="timer-info">
+            <div class="timer-skill">${this.getSkillIcon(training.skill)} ${skillName}</div>
+            <div class="timer-activity">${activityName}</div>
+          </div>
+          <button class="timer-cancel-btn" onclick="game.stopTraining()" title="Stop Training"></button>
+        </div>
         <div class="timer-bar-container">
           <div class="timer-bar">
             <div class="timer-fill" id="header-timer-fill"></div>
@@ -619,7 +1138,8 @@ class BMTIdle {
           <div class="text-muted">Welcome, ${this.currentUser.username}</div>
         </div>
         
-        <div class="nav-menu">
+        <div class="sidebar-content">
+          <div class="nav-menu">
           <div class="nav-section">
             <div class="nav-section-title">Game</div>
             <a href="#" class="nav-item ${this.currentPage === 'dashboard' ? 'active' : ''}" data-page="dashboard">
@@ -645,7 +1165,7 @@ class BMTIdle {
               <span class="nav-item-icon">🎣</span> Fishing
             </a>
             <a href="#" class="nav-item ${this.currentPage === 'farming' ? 'active' : ''}" data-page="farming">
-              <span class="nav-item-icon">🌱</span> Farming
+              <span class="nav-item-icon">🌾</span> Farming
             </a>
             <a href="#" class="nav-item ${this.currentPage === 'smelting' ? 'active' : ''}" data-page="smelting">
               <span class="nav-item-icon">🔥</span> Smelting
@@ -691,6 +1211,9 @@ class BMTIdle {
             <a href="#" class="nav-item ${this.currentPage === 'leaderboard' ? 'active' : ''}" data-page="leaderboard">
               <span class="nav-item-icon">🏆</span> Leaderboard
             </a>
+            <a href="#" class="nav-item ${this.currentPage === 'social' ? 'active' : ''}" data-page="social">
+              <span class="nav-item-icon">👥</span> Social
+            </a>
           </div>
 
           <div class="nav-section">
@@ -717,6 +1240,7 @@ class BMTIdle {
             <a href="#" class="nav-item" id="logout-btn">
               <span class="nav-item-icon">🚪</span> Logout
             </a>
+          </div>
           </div>
         </div>
       </div>
@@ -771,6 +1295,8 @@ class BMTIdle {
         return this.renderHouse();
       case 'leaderboard':
         return this.renderLeaderboard();
+      case 'social':
+        return this.renderSocial();
       case 'changelog':
         return this.renderChangelog();
       case 'profile':
@@ -784,110 +1310,195 @@ class BMTIdle {
     const totalLevel = Object.values(this.currentUser.skills).reduce((sum, skill) => sum + skill.level, 0);
     
     return `
-      <div class="grid grid-2">
-        <div class="card">
+      <div class="dashboard-grid">
+        <!-- Player Stats Card -->
+        <div class="dashboard-card">
           <div class="card-header">
-            <h2 class="card-title">Player Stats</h2>
+            <h2 class="card-title">📊 Player Stats</h2>
           </div>
-          <div class="grid grid-2">
-            <div>
-              <div class="text-muted">Total Level</div>
-              <div class="text-gold" style="font-size: 1.5rem; font-weight: bold;" id="total-level-display">${totalLevel}</div>
+          <div class="stats-grid">
+            <div class="stat-item">
+              <div class="stat-icon">⭐</div>
+              <div class="stat-content">
+                <div class="stat-label">Total Level</div>
+                <div class="stat-value" id="total-level-display">${totalLevel}</div>
+              </div>
             </div>
-            <div>
-              <div class="text-muted">Combat Level</div>
-              <div class="text-gold" style="font-size: 1.5rem; font-weight: bold;" id="combat-level-display">${this.calculateCombatLevel()}</div>
+            <div class="stat-item">
+              <div class="stat-icon">⚔️</div>
+              <div class="stat-content">
+                <div class="stat-label">Combat Level</div>
+                <div class="stat-value" id="combat-level-display">${this.calculateCombatLevel()}</div>
+              </div>
             </div>
-            <div>
-              <div class="text-muted">Coins</div>
-              <div class="text-gold" style="font-size: 1.5rem; font-weight: bold;" id="coins-display">${this.currentUser.inventory.coins || 0}</div>
+            <div class="stat-item">
+              <div class="stat-icon">💰</div>
+              <div class="stat-content">
+                <div class="stat-label">Coins</div>
+                <div class="stat-value" id="coins-display">${this.currentUser.inventory.coins || 0}</div>
+              </div>
             </div>
-            <div>
-              <div class="text-muted">Hitpoints</div>
-              <div class="text-gold" style="font-size: 1.5rem; font-weight: bold;" id="hp-display">${this.currentUser.currentHp}/${this.currentUser.maxHp}</div>
+            <div class="stat-item">
+              <div class="stat-icon">❤️</div>
+              <div class="stat-content">
+                <div class="stat-label">Hitpoints</div>
+                <div class="stat-value" id="hp-display">${this.currentUser.currentHp}/${this.currentUser.maxHp}</div>
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="card">
-          <div class="card-header">
-            <h2 class="card-title">Quick Actions</h2>
-          </div>
-          <div class="grid grid-2">
-            <button class="btn btn-primary" data-page="woodcutting">🪓 Train Woodcutting</button>
-            <button class="btn btn-primary" data-page="mining">⛏️ Train Mining</button>
-            <button class="btn btn-primary" data-page="attack">⚔️ Combat</button>
-            <button class="btn btn-primary" data-page="quests">📜 View Quests</button>
-          </div>
-        </div>
-
+        <!-- Training Card (replaces Quick Actions) -->
         ${this.currentUser.currentTraining ? `
-        <div class="card">
+        <div class="dashboard-card training-card">
           <div class="card-header">
             <h2 class="card-title">⏰ Currently Training</h2>
           </div>
-          <div style="text-align: center; padding: 1rem;">
-            <p>Training: <strong><span id="current-skill-name">${this.currentUser.currentTraining.skill === 'combat' ? 'Combat' : this.gameData.skills[this.currentUser.currentTraining.skill].name}</span></strong></p>
-            <p>Activity: <span id="current-activity">${this.currentUser.currentTraining.activity}</span></p>
-            ${this.currentUser.currentTraining.skill === 'combat' ? 
-              `<p>Monster: <span class="text-gold">${this.gameData.monsters[this.currentUser.currentTraining.monster].name}</span></p>` :
-              `<p>XP Rate: <span id="current-xp-rate">${this.currentUser.currentTraining.xpRate}</span> XP/action</p>`
-            }
+          <div class="training-content">
+            <div class="training-info">
+              <div class="training-skill">
+                <div class="training-icon">${this.currentUser.currentTraining.skill === 'combat' ? '⚔️' : this.gameData.skills[this.currentUser.currentTraining.skill]?.icon || '🎯'}</div>
+                <div class="training-details">
+                  <div class="training-name">${this.currentUser.currentTraining.skill === 'combat' ? 'Combat' : this.gameData.skills[this.currentUser.currentTraining.skill]?.name || 'Training'}</div>
+                  <div class="training-activity">${this.currentUser.currentTraining.activity}</div>
+                  ${this.currentUser.currentTraining.skill === 'combat' ? 
+                    `<div class="training-monster">vs ${this.gameData.monsters[this.currentUser.currentTraining.monster]?.name || 'Monster'}</div>` :
+                    `<div class="training-xp">${this.currentUser.currentTraining.xpRate} XP/action</div>`
+                  }
+                </div>
+              </div>
+            </div>
             
             <!-- Action Timer Bar -->
-            <div style="margin: 1rem 0;">
-              <div class="text-muted" style="font-size: 0.875rem; margin-bottom: 4px;">Next Action</div>
-              <div class="xp-bar">
-                <div id="action-progress" class="xp-progress" style="background: linear-gradient(90deg, #ffd700 0%, #ffed4e 100%);"></div>
+            <div class="progress-section">
+              <div class="progress-label">Next Action</div>
+              <div class="progress-bar">
+                <div id="action-progress" class="progress-fill" style="background: linear-gradient(90deg, #ffd700 0%, #ffed4e 100%);"></div>
               </div>
-              <div class="text-muted" style="font-size: 0.75rem;">
+              <div class="progress-text">
                 <span id="action-timer">0.0</span>s / ${this.currentUser.currentTraining.actionTime / 1000}s
               </div>
             </div>
             
             <!-- Overall Training Progress -->
-            <div style="margin: 1rem 0;">
-              <div class="text-muted" style="font-size: 0.875rem; margin-bottom: 4px;">Training Session</div>
-              <div class="xp-bar">
-                <div id="session-progress" class="xp-progress"></div>
+            <div class="progress-section">
+              <div class="progress-label">Training Session</div>
+              <div class="progress-bar">
+                <div id="session-progress" class="progress-fill"></div>
               </div>
-              <div class="text-muted" style="font-size: 0.75rem;">
-                <span id="session-timer">${Math.floor((Date.now() - this.currentUser.currentTraining.startTime) / 60000)}</span> / ${8 * 60} minutes
+              <div class="progress-text">
+                <span id="session-timer">${Math.floor((Date.now() - this.currentUser.currentTraining.startTime) / 60000)}</span> / ${24 * 60} minutes
               </div>
             </div>
             
-            <button class="btn btn-danger" onclick="game.stopTraining()">Stop Training</button>
+            <button class="btn btn-danger stop-training-btn" onclick="game.stopTraining()">Stop Training</button>
           </div>
         </div>
-        ` : ''}
+        ` : `
+        <!-- Quick Actions Card (when not training) -->
+        <div class="dashboard-card">
+          <div class="card-header">
+            <h2 class="card-title">⚡ Quick Actions</h2>
+          </div>
+          <div class="actions-grid">
+            <button class="action-btn" data-page="woodcutting">
+              <div class="action-icon">🪓</div>
+              <div class="action-text">Woodcutting</div>
+            </button>
+            <button class="action-btn" data-page="mining">
+              <div class="action-icon">⛏️</div>
+              <div class="action-text">Mining</div>
+            </button>
+            <button class="action-btn" data-page="attack">
+              <div class="action-icon">⚔️</div>
+              <div class="action-text">Combat</div>
+            </button>
+            <button class="action-btn" data-page="quests">
+              <div class="action-icon">📜</div>
+              <div class="action-text">Quests</div>
+            </button>
+            <button class="action-btn" data-page="fishing">
+              <div class="action-icon">🎣</div>
+              <div class="action-text">Fishing</div>
+            </button>
+            <button class="action-btn" data-page="farming">
+              <div class="action-icon">🌾</div>
+              <div class="action-text">Farming</div>
+            </button>
+          </div>
+        </div>
+        `}
+
 
       </div>
 
-      <div class="card">
+      <div class="dashboard-card skills-overview-card">
         <div class="card-header">
-          <h2 class="card-title">Skill Overview</h2>
+          <h2 class="card-title">⚡ Skills Overview</h2>
         </div>
-        <div class="grid grid-4">
-          ${Object.entries(this.gameData.skills).map(([skillId, skillData]) => {
-            const userSkill = this.currentUser.skills[skillId];
-            return `
-              <div class="skill-overview">
-                <div class="flex" style="align-items: center; margin-bottom: 8px;">
-                  <span class="skill-icon">${skillData.icon}</span>
-                  <div>
-                    <div style="font-weight: 500;">${skillData.name}</div>
-                    <div class="skill-level">Level ${userSkill.level}</div>
+        
+        <!-- Combat Skills Section -->
+        <div class="skills-section">
+          <div class="section-header">
+            <h3 class="section-title combat-title">⚔️ Combat Skills</h3>
+          </div>
+          <div class="skills-grid">
+            ${Object.entries(this.gameData.skills)
+              .filter(([_, skillData]) => skillData.category === 'combat')
+              .map(([skillId, skillData]) => {
+                const userSkill = this.currentUser.skills[skillId];
+                return `
+                  <div class="skill-card" onclick="game.navigateTo('${skillId}')">
+                    <div class="skill-header">
+                      <div class="skill-icon">${skillData.icon}</div>
+                      <div class="skill-info">
+                        <div class="skill-name">${skillData.name}</div>
+                        <div class="skill-level">Level ${userSkill.level}</div>
+                      </div>
+                      <div class="skill-xp">${this.formatNumber(userSkill.xp)} XP</div>
+                    </div>
+                    <div class="skill-progress">
+                      <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${this.getXpProgress(userSkill)}%"></div>
+                      </div>
+                      <div class="progress-text">${this.formatNumber(userSkill.xp)} / ${this.formatNumber(this.getXpForLevel(userSkill.level + 1))} XP</div>
+                    </div>
                   </div>
-                </div>
-                <div class="xp-bar">
-                  <div class="xp-progress" style="width: ${this.getXpProgress(userSkill)}%"></div>
-                </div>
-                <div class="text-muted" style="font-size: 0.75rem;">
-                  ${this.formatNumber(userSkill.xp)} / ${this.formatNumber(this.getXpForLevel(userSkill.level + 1))} XP
-                </div>
-              </div>
-            `;
-          }).join('')}
+                `;
+              }).join('')}
+          </div>
+        </div>
+        
+        <!-- Other Skills Section -->
+        <div class="skills-section">
+          <div class="section-header">
+            <h3 class="section-title other-title">🛠️ Other Skills</h3>
+          </div>
+          <div class="skills-grid">
+            ${Object.entries(this.gameData.skills)
+              .filter(([_, skillData]) => skillData.category !== 'combat')
+              .map(([skillId, skillData]) => {
+                const userSkill = this.currentUser.skills[skillId];
+                return `
+                  <div class="skill-card" onclick="game.navigateTo('${skillId}')">
+                    <div class="skill-header">
+                      <div class="skill-icon">${skillData.icon}</div>
+                      <div class="skill-info">
+                        <div class="skill-name">${skillData.name}</div>
+                        <div class="skill-level">Level ${userSkill.level}</div>
+                      </div>
+                      <div class="skill-xp">${this.formatNumber(userSkill.xp)} XP</div>
+                    </div>
+                    <div class="skill-progress">
+                      <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${this.getXpProgress(userSkill)}%"></div>
+                      </div>
+                      <div class="progress-text">${this.formatNumber(userSkill.xp)} / ${this.formatNumber(this.getXpForLevel(userSkill.level + 1))} XP</div>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+          </div>
         </div>
       </div>
     `;
@@ -897,26 +1508,26 @@ class BMTIdle {
     return `
       <div class="inventory-container">
         <!-- Item Grid -->
-        <div class="card">
+        <div class="dashboard-card">
           <div class="card-header">
             <h2 class="card-title">🎒 Inventory</h2>
-            <div class="text-muted">Your items: ${Object.entries(this.currentUser.inventory).filter(([itemId]) => itemId !== 'coins').reduce((sum, [, qty]) => sum + qty, 0)} / 100</div>
+            <div class="text-muted">Your items: ${Object.entries(this.currentUser.inventory).filter(([itemId]) => itemId !== 'coins').reduce((sum, [, qty]) => sum + qty, 0)} / ${this.getMaxInventorySlots()}</div>
           </div>
           
-          <div class="grid grid-4">
+          <div class="inventory-grid">
             ${Object.entries(this.currentUser.inventory).filter(([itemId]) => itemId !== 'coins').map(([itemId, quantity]) => {
               const itemData = this.gameData.items[itemId];
               if (!itemData) return '';
               
               return `
-                <div class="inventory-item-card card" onclick="game.selectInventoryItem('${itemId}')" data-item-id="${itemId}">
-                  <div style="font-size: 2rem; margin-bottom: 8px;">
+                <div class="inventory-item-card" onclick="game.selectInventoryItem('${itemId}')" data-item-id="${itemId}">
+                  <div class="item-icon">
                     ${this.getItemIcon(itemId)}
                   </div>
-                  <div style="font-weight: 500;">${itemData.name}</div>
-                  <div class="text-gold">x${this.formatNumber(quantity)}</div>
-                  <div class="text-muted" style="font-size: 0.75rem;">
-                    ${this.formatCoins(itemData.value * quantity)}
+                  <div class="item-info">
+                    <div class="item-name">${itemData.name}</div>
+                    <div class="item-quantity">x${this.formatNumber(quantity)}</div>
+                    <div class="item-value">${this.formatCoins(itemData.value * quantity)}</div>
                   </div>
                 </div>
               `;
@@ -924,17 +1535,17 @@ class BMTIdle {
           </div>
           
           ${Object.keys(this.currentUser.inventory).filter(itemId => itemId !== 'coins').length === 0 ? 
-            '<div class="text-center text-muted" style="padding: 2rem;">Your inventory is empty. Go train some skills!</div>' : ''}
+            '<div class="empty-inventory">Your inventory is empty. Go train some skills!</div>' : ''}
         </div>
         
         <!-- Item Detail Panel -->
-        <div class="card" id="inventory-detail-panel" style="display: none;">
+        <div class="dashboard-card" id="inventory-detail-panel" style="display: none;">
           <div class="card-header">
             <h3 class="card-title" id="item-detail-title">Select an Item</h3>
             <button class="btn btn-secondary btn-small" onclick="game.closeInventoryDetail()">✕ Close</button>
           </div>
           <div id="item-detail-content">
-            <p class="text-muted text-center" style="padding: 2rem;">Click on an item to view details and actions.</p>
+            <p class="text-muted text-center">Click on an item to view details and actions.</p>
           </div>
         </div>
       </div>
@@ -948,7 +1559,7 @@ class BMTIdle {
     return `
       <div class="equipment-container">
         <!-- Equipment Slots -->
-        <div class="card">
+        <div class="dashboard-card">
           <div class="card-header">
             <h2 class="card-title">⚔️ Equipment</h2>
             <div class="text-muted">Equip items to boost your combat stats</div>
@@ -1030,7 +1641,7 @@ class BMTIdle {
         </div>
         
         <!-- Stats Display -->
-        <div class="card">
+        <div class="dashboard-card">
           <div class="card-header">
             <h3>📊 Combat Stats</h3>
           </div>
@@ -1093,26 +1704,7 @@ class BMTIdle {
           <div class="xp-progress" id="xp-progress-${skillId}" style="width: ${this.getXpProgress(userSkill)}%"></div>
         </div>
         
-        <!-- Action Timer (only show if training this skill) -->
-        ${this.currentUser.currentTraining && this.currentUser.currentTraining.skill === skillId ? `
-        <div class="card" style="margin-bottom: 2rem; background: rgba(255, 215, 0, 0.1); border-color: var(--osrs-gold);">
-          <div class="card-header">
-            <h3>⏰ Action Timer</h3>
-          </div>
-          <div style="text-align: center;">
-            <p>Current Activity: <strong><span id="skill-page-activity">${this.currentUser.currentTraining.activity}</span></strong></p>
-            <div style="margin: 1rem 0;">
-              <div class="xp-bar">
-                <div id="skill-action-progress" class="xp-progress" style="background: linear-gradient(90deg, #ffd700 0%, #ffed4e 100%);"></div>
-              </div>
-              <div class="text-muted" style="font-size: 0.75rem;">
-                <span id="skill-action-timer">0.0</span>s / ${this.currentUser.currentTraining.actionTime / 1000}s
-              </div>
-            </div>
-            <button class="btn btn-danger" onclick="game.stopTraining()">Stop Training</button>
-          </div>
-        </div>
-        ` : ''}
+        <!-- Action Timer removed - now shown in banner area -->
         
         ${this.renderSkillActions(skillId)}
       </div>
@@ -1125,312 +1717,672 @@ class BMTIdle {
     switch (skillId) {
       case 'woodcutting':
         return `
-          <div class="grid grid-3">
-            <div class="card ${userSkill.level < 1 ? 'disabled-card' : ''}">
-              <div style="text-align: center; margin-bottom: 1rem;">
-                <img src="./images/trees/normal_tree.svg" alt="Normal Tree" style="width: 64px; height: 64px;">
+          <div class="skills-grid">
+            <div class="skill-card ${userSkill.level < 1 ? 'disabled-card' : ''}" onclick="game.trainSkill('woodcutting', 'logs', 15, 4000, 'Cutting Normal Trees')">
+              <div class="skill-header">
+                <div class="skill-icon">🌳</div>
+                <div class="skill-info">
+                  <div class="skill-name">Normal Tree</div>
+                  <div class="skill-level">Level 1+</div>
+                </div>
+                <div class="skill-xp">15 XP</div>
               </div>
-              <h3>Normal Tree</h3>
-              <p>Level 1 required</p>
-              <p>25 XP per log (5s each)</p>
-              <button class="btn btn-primary" ${userSkill.level < 1 ? 'disabled' : ''} onclick="game.trainSkill('woodcutting', 'logs', 25, 5000, 'Cutting Normal Trees')">
-                Cut Tree
-              </button>
-            </div>
-            <div class="card ${userSkill.level < 15 ? 'disabled-card' : ''}">
-              <div style="text-align: center; margin-bottom: 1rem;">
-                <img src="./images/trees/oak_tree.svg" alt="Oak Tree" style="width: 64px; height: 64px;">
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">4s per log</div>
               </div>
-              <h3>Oak Tree</h3>
-              <p>Level 15 required</p>
-              <p>37.5 XP per log (5s each)</p>
-              <button class="btn btn-primary" ${userSkill.level < 15 ? 'disabled' : ''} 
-                onclick="game.trainSkill('woodcutting', 'oak_logs', 37.5, 5000, 'Cutting Oak Trees')">
-                Cut Oak Tree
-              </button>
+              <div class="skill-description">Basic woodcutting training</div>
             </div>
-            <div class="card ${userSkill.level < 30 ? 'disabled-card' : ''}">
-              <div style="text-align: center; margin-bottom: 1rem;">
-                <img src="./images/trees/willow_tree.svg" alt="Willow Tree" style="width: 64px; height: 64px;">
+            
+            <div class="skill-card ${userSkill.level < 15 ? 'disabled-card' : ''}" onclick="game.trainSkill('woodcutting', 'oak_logs', 37.5, 5000, 'Cutting Oak Trees')">
+              <div class="skill-header">
+                <div class="skill-icon">🌲</div>
+                <div class="skill-info">
+                  <div class="skill-name">Oak Tree</div>
+                  <div class="skill-level">Level 15+</div>
+                </div>
+                <div class="skill-xp">37.5 XP</div>
               </div>
-              <h3>Willow Tree</h3>
-              <p>Level 30 required</p>
-              <p>67.5 XP per log (6s each)</p>
-              <button class="btn btn-primary" ${userSkill.level < 30 ? 'disabled' : ''} 
-                onclick="game.trainSkill('woodcutting', 'willow_logs', 67.5, 6000, 'Cutting Willow Trees')">
-                Cut Willow Tree
-              </button>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">5s per log</div>
+              </div>
+              <div class="skill-description">Harder wood, better XP</div>
             </div>
-            <div class="card ${userSkill.level < 60 ? 'disabled-card' : ''}">
-              <h3>Yew Tree</h3>
-              <p>Level 60 required</p>
-              <p>175 XP per log (10s each)</p>
-              <button class="btn btn-primary" ${userSkill.level < 60 ? 'disabled' : ''} 
-                onclick="game.trainSkill('woodcutting', 'yew_logs', 175, 10000, 'Cutting Yew Trees')">
-                Cut Yew Tree
-              </button>
+            
+            <div class="skill-card ${userSkill.level < 30 ? 'disabled-card' : ''}" onclick="game.trainSkill('woodcutting', 'willow_logs', 67.5, 6000, 'Cutting Willow Trees')">
+              <div class="skill-header">
+                <div class="skill-icon">🌿</div>
+                <div class="skill-info">
+                  <div class="skill-name">Willow Tree</div>
+                  <div class="skill-level">Level 30+</div>
+                </div>
+                <div class="skill-xp">67.5 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">6s per log</div>
+              </div>
+              <div class="skill-description">Fast-growing willow trees</div>
             </div>
-            <div class="card ${userSkill.level < 75 ? 'disabled-card' : ''}">
-              <h3>Magic Tree</h3>
-              <p>Level 75 required</p>
-              <p>250 XP per log (15s each)</p>
-              <button class="btn btn-primary" ${userSkill.level < 75 ? 'disabled' : ''} 
-                onclick="game.trainSkill('woodcutting', 'magic_logs', 250, 15000, 'Cutting Magic Trees')">
-                Cut Magic Tree
-              </button>
+            
+            <div class="skill-card ${userSkill.level < 60 ? 'disabled-card' : ''}" onclick="game.trainSkill('woodcutting', 'yew_logs', 175, 10000, 'Cutting Yew Trees')">
+              <div class="skill-header">
+                <div class="skill-icon">🌳</div>
+                <div class="skill-info">
+                  <div class="skill-name">Yew Tree</div>
+                  <div class="skill-level">Level 60+</div>
+                </div>
+                <div class="skill-xp">175 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">10s per log</div>
+              </div>
+              <div class="skill-description">Ancient and valuable wood</div>
+            </div>
+            
+            <div class="skill-card ${userSkill.level < 75 ? 'disabled-card' : ''}" onclick="game.trainSkill('woodcutting', 'magic_logs', 250, 15000, 'Cutting Magic Trees')">
+              <div class="skill-header">
+                <div class="skill-icon">✨</div>
+                <div class="skill-info">
+                  <div class="skill-name">Magic Tree</div>
+                  <div class="skill-level">Level 75+</div>
+                </div>
+                <div class="skill-xp">250 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">15s per log</div>
+              </div>
+              <div class="skill-description">Magical wood with great value</div>
             </div>
           </div>
         `;
       
       case 'mining':
         return `
-          <div class="grid grid-3">
-            <div class="card ${userSkill.level < 1 ? 'disabled-card' : ''}">
-              <div style="text-align: center; margin-bottom: 1rem;">
-                <img src="./images/ores/copper_ore.svg" alt="Copper Ore" style="width: 64px; height: 64px;">
+          <div class="skills-grid">
+            <div class="skill-card ${userSkill.level < 1 ? 'disabled-card' : ''}" onclick="game.trainSkill('mining', 'copper_ore', 12, 5000, 'Mining Copper')">
+              <div class="skill-header">
+                <div class="skill-icon">🟤</div>
+                <div class="skill-info">
+                  <div class="skill-name">Copper Ore</div>
+                  <div class="skill-level">Level 1+</div>
+                </div>
+                <div class="skill-xp">12 XP</div>
               </div>
-              <h3>Copper Ore</h3>
-              <p>Level 1 required</p>
-              <p>17.5 XP per ore (6s each)</p>
-              <button class="btn btn-primary" onclick="game.trainSkill('mining', 'copper_ore', 17.5, 6000, 'Mining Copper')">
-                Mine Copper
-              </button>
-            </div>
-            <div class="card ${userSkill.level < 1 ? 'disabled-card' : ''}">
-              <h3>Tin Ore</h3>
-              <p>Level 1 required</p>
-              <p>17.5 XP per ore (6s each)</p>
-              <button class="btn btn-primary" onclick="game.trainSkill('mining', 'tin_ore', 17.5, 6000, 'Mining Tin')">
-                Mine Tin
-              </button>
-            </div>
-            <div class="card ${userSkill.level < 15 ? 'disabled-card' : ''}">
-              <div style="text-align: center; margin-bottom: 1rem;">
-                <img src="./images/ores/iron_ore.svg" alt="Iron Ore" style="width: 64px; height: 64px;">
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">5s per ore</div>
               </div>
-              <h3>Iron Ore</h3>
-              <p>Level 15 required</p>
-              <p>35 XP per ore (6s each)</p>
-              <button class="btn btn-primary" ${userSkill.level < 15 ? 'disabled' : ''} 
-                onclick="game.trainSkill('mining', 'iron_ore', 35, 6000, 'Mining Iron')">
-                Mine Iron
-              </button>
+              <div class="skill-description">Basic mining training</div>
             </div>
-            <div class="card ${userSkill.level < 30 ? 'disabled-card' : ''}">
-              <h3>Coal</h3>
-              <p>Level 30 required</p>
-              <p>50 XP per coal (8s each)</p>
-              <button class="btn btn-primary" ${userSkill.level < 30 ? 'disabled' : ''} 
-                onclick="game.trainSkill('mining', 'coal', 50, 8000, 'Mining Coal')">
-                Mine Coal
-              </button>
+            
+            <div class="skill-card ${userSkill.level < 15 ? 'disabled-card' : ''}" onclick="game.trainSkill('mining', 'iron_ore', 35, 6000, 'Mining Iron')">
+              <div class="skill-header">
+                <div class="skill-icon">⚫</div>
+                <div class="skill-info">
+                  <div class="skill-name">Iron Ore</div>
+                  <div class="skill-level">Level 15+</div>
+                </div>
+                <div class="skill-xp">35 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">6s per ore</div>
+              </div>
+              <div class="skill-description">Strong metal ore</div>
             </div>
-            <div class="card ${userSkill.level < 40 ? 'disabled-card' : ''}">
-              <h3>Gold Ore</h3>
-              <p>Level 40 required</p>
-              <p>65 XP per ore (8s each)</p>
-              <button class="btn btn-primary" ${userSkill.level < 40 ? 'disabled' : ''} 
-                onclick="game.trainSkill('mining', 'gold_ore', 65, 8000, 'Mining Gold')">
-                Mine Gold
-              </button>
+            
+            <div class="skill-card ${userSkill.level < 25 ? 'disabled-card' : ''}" onclick="game.trainSkill('mining', 'silver_ore', 50, 7000, 'Mining Silver')">
+              <div class="skill-header">
+                <div class="skill-icon">⚪</div>
+                <div class="skill-info">
+                  <div class="skill-name">Silver Ore</div>
+                  <div class="skill-level">Level 25+</div>
+                </div>
+                <div class="skill-xp">50 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">7s per ore</div>
+              </div>
+              <div class="skill-description">Precious metal ore</div>
             </div>
-            <div class="card ${userSkill.level < 55 ? 'disabled-card' : ''}">
-              <h3>Mithril Ore</h3>
-              <p>Level 55 required</p>
-              <p>80 XP per ore (10s each)</p>
-              <button class="btn btn-primary" ${userSkill.level < 55 ? 'disabled' : ''} 
-                onclick="game.trainSkill('mining', 'mithril_ore', 80, 10000, 'Mining Mithril')">
-                Mine Mithril
-              </button>
+            
+            <div class="skill-card ${userSkill.level < 35 ? 'disabled-card' : ''}" onclick="game.trainSkill('mining', 'mithril_ore', 75, 8000, 'Mining Mithril')">
+              <div class="skill-header">
+                <div class="skill-icon">💎</div>
+                <div class="skill-info">
+                  <div class="skill-name">Mithril Ore</div>
+                  <div class="skill-level">Level 35+</div>
+                </div>
+                <div class="skill-xp">75 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">8s per ore</div>
+              </div>
+              <div class="skill-description">Magical metal ore</div>
             </div>
+            
+            <div class="skill-card ${userSkill.level < 45 ? 'disabled-card' : ''}" onclick="game.trainSkill('mining', 'gold_ore', 100, 9000, 'Mining Gold')">
+              <div class="skill-header">
+                <div class="skill-icon">🟡</div>
+                <div class="skill-info">
+                  <div class="skill-name">Gold Ore</div>
+                  <div class="skill-level">Level 45+</div>
+                </div>
+                <div class="skill-xp">100 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">9s per ore</div>
+              </div>
+              <div class="skill-description">Luxury metal ore</div>
+            </div>
+            
+            <div class="skill-card ${userSkill.level < 55 ? 'disabled-card' : ''}" onclick="game.trainSkill('mining', 'adamant_ore', 150, 10000, 'Mining Adamant')">
+              <div class="skill-header">
+                <div class="skill-icon">🔵</div>
+                <div class="skill-info">
+                  <div class="skill-name">Adamant Ore</div>
+                  <div class="skill-level">Level 55+</div>
+                </div>
+                <div class="skill-xp">150 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">10s per ore</div>
+              </div>
+              <div class="skill-description">Elite metal ore</div>
+            </div>
+            
+            <div class="skill-card ${userSkill.level < 65 ? 'disabled-card' : ''}" onclick="game.trainSkill('mining', 'cobalt_ore', 200, 11000, 'Mining Cobalt')">
+              <div class="skill-header">
+                <div class="skill-icon">🔷</div>
+                <div class="skill-info">
+                  <div class="skill-name">Cobalt Ore</div>
+                  <div class="skill-level">Level 65+</div>
+                </div>
+                <div class="skill-xp">200 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">11s per ore</div>
+              </div>
+              <div class="skill-description">Rare metal ore</div>
+            </div>
+            
+            <div class="skill-card ${userSkill.level < 75 ? 'disabled-card' : ''}" onclick="game.trainSkill('mining', 'rune_ore', 275, 12000, 'Mining Rune')">
+              <div class="skill-header">
+                <div class="skill-icon">🔮</div>
+                <div class="skill-info">
+                  <div class="skill-name">Rune Ore</div>
+                  <div class="skill-level">Level 75+</div>
+                </div>
+                <div class="skill-xp">275 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">12s per ore</div>
+              </div>
+              <div class="skill-description">Mystical metal ore</div>
+            </div>
+            
+            <div class="skill-card ${userSkill.level < 85 ? 'disabled-card' : ''}" onclick="game.trainSkill('mining', 'astral_ore', 350, 13000, 'Mining Astral')">
+              <div class="skill-header">
+                <div class="skill-icon">✨</div>
+                <div class="skill-info">
+                  <div class="skill-name">Astral Ore</div>
+                  <div class="skill-level">Level 85+</div>
+                </div>
+                <div class="skill-xp">350 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">13s per ore</div>
+              </div>
+              <div class="skill-description">Cosmic metal ore</div>
+            </div>
+            
+            <div class="skill-card ${userSkill.level < 95 ? 'disabled-card' : ''}" onclick="game.trainSkill('mining', 'infernal_ore', 450, 14000, 'Mining Infernal')">
+              <div class="skill-header">
+                <div class="skill-icon">🔥</div>
+                <div class="skill-info">
+                  <div class="skill-name">Infernal Ore</div>
+                  <div class="skill-level">Level 95+</div>
+                </div>
+                <div class="skill-xp">450 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">14s per ore</div>
+              </div>
+              <div class="skill-description">Infernal metal ore</div>
+            </div>
+            
           </div>
         `;
 
       case 'fishing':
         return `
-          <div class="grid grid-3">
-            <div class="card ${userSkill.level < 1 ? 'disabled-card' : ''}">
-              <h3>Shrimp</h3>
-              <p>Level 1 required</p>
-              <p>10 XP per shrimp (5s each)</p>
-              <button class="btn btn-primary" ${userSkill.level < 1 ? 'disabled' : ''} onclick="game.trainSkill('fishing', 'shrimp', 10, 5000, 'Catching Shrimp')">
-                Catch Shrimp
-              </button>
+          <div class="skills-grid">
+            <div class="skill-card ${userSkill.level < 1 ? 'disabled-card' : ''}" onclick="game.trainSkill('fishing', 'shrimp', 10, 5000, 'Catching Shrimp')">
+              <div class="skill-header">
+                <div class="skill-icon">🦐</div>
+                <div class="skill-info">
+                  <div class="skill-name">Shrimp</div>
+                  <div class="skill-level">Level 1+</div>
+                </div>
+                <div class="skill-xp">10 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">5s per shrimp</div>
+              </div>
+              <div class="skill-description">Basic fishing training</div>
             </div>
-            <div class="card ${userSkill.level < 5 ? 'disabled-card' : ''}">
-              <h3>Sardine</h3>
-              <p>Level 5 required</p>
-              <p>20 XP per sardine (5s each)</p>
-              <button class="btn btn-primary" ${userSkill.level < 5 ? 'disabled' : ''} 
-                onclick="game.trainSkill('fishing', 'sardine', 20, 5000, 'Catching Sardines')">
-                Catch Sardine
-              </button>
+            
+            <div class="skill-card ${userSkill.level < 5 ? 'disabled-card' : ''}" onclick="game.trainSkill('fishing', 'sardine', 20, 5000, 'Catching Sardines')">
+              <div class="skill-header">
+                <div class="skill-icon">🐟</div>
+                <div class="skill-info">
+                  <div class="skill-name">Sardine</div>
+                  <div class="skill-level">Level 5+</div>
+                </div>
+                <div class="skill-xp">20 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">5s per sardine</div>
+              </div>
+              <div class="skill-description">Small but tasty fish</div>
             </div>
-            <div class="card ${userSkill.level < 20 ? 'disabled-card' : ''}">
-              <h3>Trout</h3>
-              <p>Level 20 required</p>
-              <p>50 XP per trout (6s each)</p>
-              <button class="btn btn-primary" ${userSkill.level < 20 ? 'disabled' : ''} 
-                onclick="game.trainSkill('fishing', 'trout', 50, 6000, 'Catching Trout')">
-                Catch Trout
-              </button>
+            
+            <div class="skill-card ${userSkill.level < 20 ? 'disabled-card' : ''}" onclick="game.trainSkill('fishing', 'trout', 50, 6000, 'Catching Trout')">
+              <div class="skill-header">
+                <div class="skill-icon">🐟</div>
+                <div class="skill-info">
+                  <div class="skill-name">Trout</div>
+                  <div class="skill-level">Level 20+</div>
+                </div>
+                <div class="skill-xp">50 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">6s per trout</div>
+              </div>
+              <div class="skill-description">Freshwater fishing</div>
             </div>
-            <div class="card ${userSkill.level < 30 ? 'disabled-card' : ''}">
-              <h3>Salmon</h3>
-              <p>Level 30 required</p>
-              <p>70 XP per salmon (7s each)</p>
-              <button class="btn btn-primary" ${userSkill.level < 30 ? 'disabled' : ''} 
-                onclick="game.trainSkill('fishing', 'salmon', 70, 7000, 'Catching Salmon')">
-                Catch Salmon
-              </button>
+            
+            <div class="skill-card ${userSkill.level < 30 ? 'disabled-card' : ''}" onclick="game.trainSkill('fishing', 'salmon', 70, 7000, 'Catching Salmon')">
+              <div class="skill-header">
+                <div class="skill-icon">🐟</div>
+                <div class="skill-info">
+                  <div class="skill-name">Salmon</div>
+                  <div class="skill-level">Level 30+</div>
+                </div>
+                <div class="skill-xp">70 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">7s per salmon</div>
+              </div>
+              <div class="skill-description">Premium fish for cooking</div>
             </div>
-            <div class="card ${userSkill.level < 40 ? 'disabled-card' : ''}">
-              <h3>Lobster</h3>
-              <p>Level 40 required</p>
-              <p>90 XP per lobster (8s each)</p>
-              <button class="btn btn-primary" ${userSkill.level < 40 ? 'disabled' : ''} 
-                onclick="game.trainSkill('fishing', 'lobster', 90, 8000, 'Catching Lobsters')">
-                Catch Lobster
-              </button>
+            
+            <div class="skill-card ${userSkill.level < 40 ? 'disabled-card' : ''}" onclick="game.trainSkill('fishing', 'lobster', 90, 8000, 'Catching Lobsters')">
+              <div class="skill-header">
+                <div class="skill-icon">🦞</div>
+                <div class="skill-info">
+                  <div class="skill-name">Lobster</div>
+                  <div class="skill-level">Level 40+</div>
+                </div>
+                <div class="skill-xp">90 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">8s per lobster</div>
+              </div>
+              <div class="skill-description">Delicious and valuable</div>
             </div>
-            <div class="card ${userSkill.level < 76 ? 'disabled-card' : ''}">
-              <h3>Shark</h3>
-              <p>Level 76 required</p>
-              <p>110 XP per shark (10s each)</p>
-              <button class="btn btn-primary" ${userSkill.level < 76 ? 'disabled' : ''} 
-                onclick="game.trainSkill('fishing', 'shark', 110, 10000, 'Catching Sharks')">
-                Catch Shark
-              </button>
+            
+            <div class="skill-card ${userSkill.level < 76 ? 'disabled-card' : ''}" onclick="game.trainSkill('fishing', 'shark', 110, 10000, 'Catching Sharks')">
+              <div class="skill-header">
+                <div class="skill-icon">🦈</div>
+                <div class="skill-info">
+                  <div class="skill-name">Shark</div>
+                  <div class="skill-level">Level 76+</div>
+                </div>
+                <div class="skill-xp">110 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">10s per shark</div>
+              </div>
+              <div class="skill-description">The ultimate fishing challenge</div>
             </div>
           </div>
         `;
 
       case 'cooking':
         return `
-          <div class="grid grid-3">
-            <div class="card ${userSkill.level < 1 ? 'disabled-card' : ''}">
-              <h3>Cooked Shrimp</h3>
-              <p>Level 1 required</p>
-              <p>30 XP per shrimp</p>
-              <p>Requires: Raw Shrimp</p>
-              <p class="text-muted">Heals 3 HP</p>
-              <button class="btn btn-primary" ${userSkill.level < 1 ? 'disabled' : ''} onclick="game.cookFood('shrimp', 'cooked_shrimp', 30, 2000)">
-                Cook Shrimp
-              </button>
+          <div class="skills-grid">
+            <div class="skill-card ${userSkill.level < 1 ? 'disabled-card' : ''}" onclick="game.cookFood('shrimp', 'cooked_shrimp', 30, 2000)">
+              <div class="skill-header">
+                <div class="skill-icon">🍤</div>
+                <div class="skill-info">
+                  <div class="skill-name">Cook Shrimp</div>
+                  <div class="skill-level">Level 1+</div>
+                </div>
+                <div class="skill-xp">30 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">2s per shrimp</div>
+              </div>
+              <div class="skill-description">Basic cooking training</div>
             </div>
-            <div class="card ${userSkill.level < 1 ? 'disabled-card' : ''}">
-              <h3>Bread</h3>
-              <p>Level 1 required</p>
-              <p>40 XP per bread</p>
-              <p>Requires: Wheat</p>
-              <p class="text-muted">Heals 5 HP</p>
-              <button class="btn btn-primary" ${userSkill.level < 1 ? 'disabled' : ''} onclick="game.cookFood('wheat', 'bread', 40, 3000)">
-                Bake Bread
-              </button>
+            <div class="skill-card ${userSkill.level < 1 ? 'disabled-card' : ''}" onclick="game.cookFood('wheat', 'bread', 40, 3000)">
+              <div class="skill-header">
+                <div class="skill-icon">🍞</div>
+                <div class="skill-info">
+                  <div class="skill-name">Bake Bread</div>
+                  <div class="skill-level">Level 1+</div>
+                </div>
+                <div class="skill-xp">40 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">3s per bread</div>
+              </div>
+              <div class="skill-description">Simple bread baking</div>
             </div>
-            <div class="card ${userSkill.level < 15 ? 'disabled-card' : ''}">
-              <h3>Cooked Trout</h3>
-              <p>Level 15 required</p>
-              <p>70 XP per trout</p>
-              <p>Requires: Raw Trout</p>
-              <p class="text-muted">Heals 7 HP</p>
-              <button class="btn btn-primary" ${userSkill.level < 15 ? 'disabled' : ''} 
-                onclick="game.cookFood('trout', 'cooked_trout', 70, 4000)">
-                Cook Trout
-              </button>
+            <div class="skill-card ${userSkill.level < 15 ? 'disabled-card' : ''}" onclick="game.cookFood('trout', 'cooked_trout', 70, 4000)">
+              <div class="skill-header">
+                <div class="skill-icon">🐟</div>
+                <div class="skill-info">
+                  <div class="skill-name">Cook Trout</div>
+                  <div class="skill-level">Level 15+</div>
+                </div>
+                <div class="skill-xp">70 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">4s per trout</div>
+              </div>
+              <div class="skill-description">Freshwater fish cooking</div>
             </div>
-            <div class="card ${userSkill.level < 25 ? 'disabled-card' : ''}">
-              <h3>Vegetable Stew</h3>
-              <p>Level 25 required</p>
-              <p>60 XP per stew</p>
-              <p>Requires: Potato + Carrot</p>
-              <p class="text-muted">Heals 8 HP</p>
-              <button class="btn btn-primary" ${userSkill.level < 25 ? 'disabled' : ''} 
-                onclick="game.cookFood(['potato', 'carrot'], 'vegetable_stew', 60, 5000)">
-                Cook Stew
-              </button>
+            <div class="skill-card ${userSkill.level < 25 ? 'disabled-card' : ''}" onclick="game.cookFood(['potato', 'carrot'], 'vegetable_stew', 60, 5000)">
+              <div class="skill-header">
+                <div class="skill-icon">🍲</div>
+                <div class="skill-info">
+                  <div class="skill-name">Vegetable Stew</div>
+                  <div class="skill-level">Level 25+</div>
+                </div>
+                <div class="skill-xp">60 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">5s per stew</div>
+              </div>
+              <div class="skill-description">Hearty vegetable cooking</div>
             </div>
-            <div class="card ${userSkill.level < 40 ? 'disabled-card' : ''}">
-              <h3>Cabbage Soup</h3>
-              <p>Level 40 required</p>
-              <p>80 XP per soup</p>
-              <p>Requires: Cabbage + Wheat</p>
-              <p class="text-muted">Heals 12 HP</p>
-              <button class="btn btn-primary" ${userSkill.level < 40 ? 'disabled' : ''} 
-                onclick="game.cookFood(['cabbage', 'wheat'], 'cabbage_soup', 80, 6000)">
-                Cook Soup
-              </button>
+            <div class="skill-card ${userSkill.level < 40 ? 'disabled-card' : ''}" onclick="game.cookFood(['cabbage', 'wheat'], 'cabbage_soup', 80, 6000)">
+              <div class="skill-header">
+                <div class="skill-icon">🥬</div>
+                <div class="skill-info">
+                  <div class="skill-name">Cabbage Soup</div>
+                  <div class="skill-level">Level 40+</div>
+                </div>
+                <div class="skill-xp">80 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">6s per soup</div>
+              </div>
+              <div class="skill-description">Nutritious soup making</div>
             </div>
           </div>
         `;
 
       case 'smelting':
         return `
-          <div class="grid grid-3">
-            <div class="card">
-              <h3>Bronze Bar</h3>
-              <p>Level 1 required</p>
-              <p>6.25 XP per bar</p>
-              <p>Requires: Copper + Tin</p>
-              <button class="btn btn-primary" onclick="game.smeltBar(['copper_ore', 'tin_ore'], 'bronze_bar', 6.25, 3000)">
-                Smelt Bronze
-              </button>
+          <div class="skills-grid">
+            <div class="skill-card" onclick="game.smeltBar(['copper_ore'], 'copper_bar', 6.25, 3000)">
+              <div class="skill-header">
+                <div class="skill-icon">🟤</div>
+                <div class="skill-info">
+                  <div class="skill-name">Copper Bar</div>
+                  <div class="skill-level">Level 1+</div>
+                </div>
+                <div class="skill-xp">6.25 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">3s per bar</div>
+              </div>
+              <div class="skill-description">Basic smelting training</div>
             </div>
-            <div class="card">
-              <h3>Iron Bar</h3>
-              <p>Level 15 required</p>
-              <p>12.5 XP per bar</p>
-              <p>Requires: Iron Ore</p>
-              <button class="btn btn-primary" ${userSkill.level < 15 ? 'disabled' : ''} 
-                onclick="game.smeltBar(['iron_ore'], 'iron_bar', 12.5, 4000)">
-                Smelt Iron
-              </button>
+            <div class="skill-card ${userSkill.level < 15 ? 'disabled-card' : ''}" onclick="game.smeltBar(['iron_ore'], 'iron_bar', 12.5, 4000)">
+              <div class="skill-header">
+                <div class="skill-icon">⚫</div>
+                <div class="skill-info">
+                  <div class="skill-name">Iron Bar</div>
+                  <div class="skill-level">Level 15+</div>
+                </div>
+                <div class="skill-xp">12.5 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">4s per bar</div>
+              </div>
+              <div class="skill-description">Strong metal smelting</div>
             </div>
-            <div class="card">
-              <h3>Steel Bar</h3>
-              <p>Level 30 required</p>
-              <p>17.5 XP per bar</p>
-              <p>Requires: Iron Ore + Coal</p>
-              <button class="btn btn-primary" ${userSkill.level < 30 ? 'disabled' : ''} 
-                onclick="game.smeltBar(['iron_ore', 'coal'], 'steel_bar', 17.5, 5000)">
-                Smelt Steel
-              </button>
+            <div class="skill-card ${userSkill.level < 30 ? 'disabled-card' : ''}" onclick="game.smeltBar(['iron_ore', 'coal'], 'steel_bar', 17.5, 5000)">
+              <div class="skill-header">
+                <div class="skill-icon">🔩</div>
+                <div class="skill-info">
+                  <div class="skill-name">Steel Bar</div>
+                  <div class="skill-level">Level 30+</div>
+                </div>
+                <div class="skill-xp">17.5 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">5s per bar</div>
+              </div>
+              <div class="skill-description">Advanced metal smelting</div>
+            </div>
+            
+            <div class="skill-card ${userSkill.level < 45 ? 'disabled-card' : ''}" onclick="game.smeltBar(['silver_ore'], 'silver_bar', 25, 6000)">
+              <div class="skill-header">
+                <div class="skill-icon">⚪</div>
+                <div class="skill-info">
+                  <div class="skill-name">Silver Bar</div>
+                  <div class="skill-level">Level 45+</div>
+                </div>
+                <div class="skill-xp">25 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">6s per bar</div>
+              </div>
+              <div class="skill-description">Precious metal smelting</div>
+            </div>
+            
+            <div class="skill-card ${userSkill.level < 60 ? 'disabled-card' : ''}" onclick="game.smeltBar(['mithril_ore'], 'mithril_bar', 35, 7000)">
+              <div class="skill-header">
+                <div class="skill-icon">💎</div>
+                <div class="skill-info">
+                  <div class="skill-name">Mithril Bar</div>
+                  <div class="skill-level">Level 60+</div>
+                </div>
+                <div class="skill-xp">35 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">7s per bar</div>
+              </div>
+              <div class="skill-description">Magical metal smelting</div>
+            </div>
+            
+            <div class="skill-card ${userSkill.level < 75 ? 'disabled-card' : ''}" onclick="game.smeltBar(['gold_ore'], 'gold_bar', 50, 8000)">
+              <div class="skill-header">
+                <div class="skill-icon">🟡</div>
+                <div class="skill-info">
+                  <div class="skill-name">Gold Bar</div>
+                  <div class="skill-level">Level 75+</div>
+                </div>
+                <div class="skill-xp">50 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">8s per bar</div>
+              </div>
+              <div class="skill-description">Luxury metal smelting</div>
+            </div>
+            
+            <div class="skill-card ${userSkill.level < 90 ? 'disabled-card' : ''}" onclick="game.smeltBar(['adamant_ore'], 'adamant_bar', 75, 9000)">
+              <div class="skill-header">
+                <div class="skill-icon">🔵</div>
+                <div class="skill-info">
+                  <div class="skill-name">Adamant Bar</div>
+                  <div class="skill-level">Level 90+</div>
+                </div>
+                <div class="skill-xp">75 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">9s per bar</div>
+              </div>
+              <div class="skill-description">Elite metal smelting</div>
             </div>
           </div>
         `;
 
       case 'smithing':
         return `
-          <div class="grid grid-3">
+          <div class="skills-grid">
             <!-- Weapons -->
-            <div class="card">
-              <h3>Bronze Sword</h3>
-              <p>Level 1 required</p>
-              <p>12.5 XP per sword</p>
-              <p>Requires: Bronze Bar</p>
-              <button class="btn btn-primary" onclick="game.smithItem('bronze_bar', 'bronze_sword', 12.5, 4000)">
-                Smith Bronze Sword
-              </button>
+            <div class="skill-card" onclick="game.smithItem('copper_bar', 'copper_sword', 12.5, 4000)">
+              <div class="skill-header">
+                <div class="skill-icon">⚔️</div>
+                <div class="skill-info">
+                  <div class="skill-name">Copper Sword</div>
+                  <div class="skill-level">Level 1+</div>
+                </div>
+                <div class="skill-xp">12.5 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">4s per sword</div>
+              </div>
+              <div class="skill-description">Basic weapon smithing</div>
             </div>
-            <div class="card">
-              <h3>Iron Sword</h3>
-              <p>Level 5 required</p>
-              <p>25 XP per sword</p>
-              <p>Requires: Iron Bar</p>
-              <button class="btn btn-primary" ${userSkill.level < 5 ? 'disabled' : ''} 
-                onclick="game.smithItem('iron_bar', 'iron_sword', 25, 5000)">
-                Smith Iron Sword
-              </button>
+            <div class="skill-card ${userSkill.level < 5 ? 'disabled-card' : ''}" onclick="game.smithItem('iron_bar', 'iron_sword', 25, 5000)">
+              <div class="skill-header">
+                <div class="skill-icon">⚔️</div>
+                <div class="skill-info">
+                  <div class="skill-name">Iron Sword</div>
+                  <div class="skill-level">Level 5+</div>
+                </div>
+                <div class="skill-xp">25 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">5s per sword</div>
+              </div>
+              <div class="skill-description">Improved weapon smithing</div>
             </div>
-            <div class="card">
-              <h3>Steel Sword</h3>
-              <p>Level 10 required</p>
-              <p>37.5 XP per sword</p>
-              <p>Requires: Steel Bar</p>
-              <button class="btn btn-primary" ${userSkill.level < 10 ? 'disabled' : ''} 
-                onclick="game.smithItem('steel_bar', 'steel_sword', 37.5, 6000)">
-                Smith Steel Sword
-              </button>
+            <div class="skill-card ${userSkill.level < 10 ? 'disabled-card' : ''}" onclick="game.smithItem('steel_bar', 'steel_sword', 37.5, 6000)">
+              <div class="skill-header">
+                <div class="skill-icon">⚔️</div>
+                <div class="skill-info">
+                  <div class="skill-name">Steel Sword</div>
+                  <div class="skill-level">Level 10+</div>
+                </div>
+                <div class="skill-xp">37.5 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">6s per sword</div>
+              </div>
+              <div class="skill-description">Advanced weapon smithing</div>
             </div>
             
             <!-- Armor - Helmets -->
@@ -1499,98 +2451,148 @@ class BMTIdle {
 
       case 'farming':
         return `
-          <div class="grid grid-3">
-            <div class="card ${userSkill.level < 1 ? 'disabled-card' : ''}">
-              <h3>Potato Seeds</h3>
-              <p>Level 1 required</p>
-              <p>8 XP per harvest</p>
-              <p>1 potato per seed (30s each)</p>
-              <p class="text-muted">Food for healing</p>
-              <button class="btn btn-primary" ${userSkill.level < 1 ? 'disabled' : ''} onclick="game.trainSkill('farming', 'potato', 8, 30000, 'Growing Potatoes', 'potato_seed')">
-                Plant Potatoes
-              </button>
+          <div class="skills-grid">
+            <div class="skill-card ${userSkill.level < 1 ? 'disabled-card' : ''}" onclick="game.trainSkill('farming', 'potato', 8, 30000, 'Growing Potatoes', 'potato_seed')">
+              <div class="skill-header">
+                <div class="skill-icon">🥔</div>
+                <div class="skill-info">
+                  <div class="skill-name">Potato Seeds</div>
+                  <div class="skill-level">Level 1+</div>
+                </div>
+                <div class="skill-xp">8 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">30s per harvest</div>
+              </div>
+              <div class="skill-description">Basic farming training</div>
             </div>
-            <div class="card ${userSkill.level < 15 ? 'disabled-card' : ''}">
-              <h3>Wheat Seeds</h3>
-              <p>Level 15 required</p>
-              <p>17 XP per harvest</p>
-              <p>1 wheat per seed (45s each)</p>
-              <p class="text-muted">For cooking bread & potions</p>
-              <button class="btn btn-primary" ${userSkill.level < 15 ? 'disabled' : ''} 
-                onclick="game.trainSkill('farming', 'wheat', 17, 45000, 'Growing Wheat', 'wheat_seed')">
-                Plant Wheat
-              </button>
+            <div class="skill-card ${userSkill.level < 15 ? 'disabled-card' : ''}" onclick="game.trainSkill('farming', 'wheat', 17, 45000, 'Growing Wheat', 'wheat_seed')">
+              <div class="skill-header">
+                <div class="skill-icon">🌾</div>
+                <div class="skill-info">
+                  <div class="skill-name">Wheat Seeds</div>
+                  <div class="skill-level">Level 15+</div>
+                </div>
+                <div class="skill-xp">17 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">45s per harvest</div>
+              </div>
+              <div class="skill-description">For cooking bread & potions</div>
             </div>
-            <div class="card ${userSkill.level < 25 ? 'disabled-card' : ''}">
-              <h3>Herb Seeds</h3>
-              <p>Level 25 required</p>
-              <p>25 XP per harvest</p>
-              <p>1 herb per seed (60s each)</p>
-              <p class="text-muted">Essential for all potions</p>
-              <button class="btn btn-primary" ${userSkill.level < 25 ? 'disabled' : ''} 
-                onclick="game.trainSkill('farming', 'herb', 25, 60000, 'Growing Herbs', 'herb_seed')">
-                Plant Herbs
-              </button>
+            <div class="skill-card ${userSkill.level < 25 ? 'disabled-card' : ''}" onclick="game.trainSkill('farming', 'herb', 25, 60000, 'Growing Herbs', 'herb_seed')">
+              <div class="skill-header">
+                <div class="skill-icon">🌿</div>
+                <div class="skill-info">
+                  <div class="skill-name">Herb Seeds</div>
+                  <div class="skill-level">Level 25+</div>
+                </div>
+                <div class="skill-xp">25 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">60s per harvest</div>
+              </div>
+              <div class="skill-description">Essential for all potions</div>
             </div>
-            <div class="card ${userSkill.level < 35 ? 'disabled-card' : ''}">
-              <h3>Carrot Seeds</h3>
-              <p>Level 35 required</p>
-              <p>35 XP per harvest</p>
-              <p>1 carrot per seed (90s each)</p>
-              <p class="text-muted">Better healing food</p>
-              <button class="btn btn-primary" ${userSkill.level < 35 ? 'disabled' : ''} 
-                onclick="game.trainSkill('farming', 'carrot', 35, 90000, 'Growing Carrots', 'carrot_seed')">
-                Plant Carrots
-              </button>
+            <div class="skill-card ${userSkill.level < 35 ? 'disabled-card' : ''}" onclick="game.trainSkill('farming', 'carrot', 35, 90000, 'Growing Carrots', 'carrot_seed')">
+              <div class="skill-header">
+                <div class="skill-icon">🥕</div>
+                <div class="skill-info">
+                  <div class="skill-name">Carrot Seeds</div>
+                  <div class="skill-level">Level 35+</div>
+                </div>
+                <div class="skill-xp">35 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">90s per harvest</div>
+              </div>
+              <div class="skill-description">Better healing food</div>
             </div>
-            <div class="card ${userSkill.level < 50 ? 'disabled-card' : ''}">
-              <h3>Cabbage Seeds</h3>
-              <p>Level 50 required</p>
-              <p>50 XP per harvest</p>
-              <p>1 cabbage per seed (120s each)</p>
-              <p class="text-muted">High-healing food</p>
-              <button class="btn btn-primary" ${userSkill.level < 50 ? 'disabled' : ''} 
-                onclick="game.trainSkill('farming', 'cabbage', 50, 120000, 'Growing Cabbage', 'cabbage_seed')">
-                Plant Cabbage
-              </button>
+            <div class="skill-card ${userSkill.level < 50 ? 'disabled-card' : ''}" onclick="game.trainSkill('farming', 'cabbage', 50, 120000, 'Growing Cabbage', 'cabbage_seed')">
+              <div class="skill-header">
+                <div class="skill-icon">🥬</div>
+                <div class="skill-info">
+                  <div class="skill-name">Cabbage Seeds</div>
+                  <div class="skill-level">Level 50+</div>
+                </div>
+                <div class="skill-xp">50 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">120s per harvest</div>
+              </div>
+              <div class="skill-description">High-healing food</div>
             </div>
           </div>
         `;
 
       case 'alchemy':
         return `
-          <div class="grid grid-3">
-            <div class="card ${userSkill.level < 1 ? 'disabled-card' : ''}">
-              <h3>Combat XP Potion</h3>
-              <p>Level 1 required</p>
-              <p>17.5 XP per potion</p>
-              <p>Requires: Herb + Vial</p>
-              <p class="text-muted">+5% combat XP for 30 minutes</p>
-              <button class="btn btn-primary" ${userSkill.level < 1 ? 'disabled' : ''} onclick="game.brewPotion(['herb', 'vial'], 'combat_xp_potion', 17.5, 5000)">
-                Brew Combat XP Potion
-              </button>
+          <div class="skills-grid">
+            <div class="skill-card ${userSkill.level < 1 ? 'disabled-card' : ''}" onclick="game.brewPotion(['herb', 'vial'], 'combat_xp_potion', 17.5, 5000)">
+              <div class="skill-header">
+                <div class="skill-icon">🧪</div>
+                <div class="skill-info">
+                  <div class="skill-name">Combat XP Potion</div>
+                  <div class="skill-level">Level 1+</div>
+                </div>
+                <div class="skill-xp">17.5 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">5s per potion</div>
+              </div>
+              <div class="skill-description">+5% combat XP for 30 minutes</div>
             </div>
-            <div class="card ${userSkill.level < 25 ? 'disabled-card' : ''}">
-              <h3>Gathering XP Potion</h3>
-              <p>Level 25 required</p>
-              <p>37.5 XP per potion</p>
-              <p>Requires: Herb + Potato + Vial</p>
-              <p class="text-muted">+5% gathering XP for 30 minutes</p>
-              <button class="btn btn-primary" ${userSkill.level < 25 ? 'disabled' : ''} 
-                onclick="game.brewPotion(['herb', 'potato', 'vial'], 'gathering_xp_potion', 37.5, 8000)">
-                Brew Gathering XP Potion
-              </button>
+            <div class="skill-card ${userSkill.level < 25 ? 'disabled-card' : ''}" onclick="game.brewPotion(['herb', 'potato', 'vial'], 'gathering_xp_potion', 37.5, 8000)">
+              <div class="skill-header">
+                <div class="skill-icon">🧪</div>
+                <div class="skill-info">
+                  <div class="skill-name">Gathering XP Potion</div>
+                  <div class="skill-level">Level 25+</div>
+                </div>
+                <div class="skill-xp">37.5 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">8s per potion</div>
+              </div>
+              <div class="skill-description">+5% gathering XP for 30 minutes</div>
             </div>
-            <div class="card ${userSkill.level < 50 ? 'disabled-card' : ''}">
-              <h3>Production XP Potion</h3>
-              <p>Level 50 required</p>
-              <p>75 XP per potion</p>
-              <p>Requires: 2x Herb + Wheat + Vial</p>
-              <p class="text-muted">+5% production XP for 30 minutes</p>
-              <button class="btn btn-primary" ${userSkill.level < 50 ? 'disabled' : ''} 
-                onclick="game.brewPotion(['herb', 'herb', 'wheat', 'vial'], 'production_xp_potion', 75, 12000)">
-                Brew Production XP Potion
-              </button>
+            <div class="skill-card ${userSkill.level < 50 ? 'disabled-card' : ''}" onclick="game.brewPotion(['herb', 'herb', 'wheat', 'vial'], 'production_xp_potion', 75, 12000)">
+              <div class="skill-header">
+                <div class="skill-icon">🧪</div>
+                <div class="skill-info">
+                  <div class="skill-name">Production XP Potion</div>
+                  <div class="skill-level">Level 50+</div>
+                </div>
+                <div class="skill-xp">75 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">12s per potion</div>
+              </div>
+              <div class="skill-description">+5% production XP for 30 minutes</div>
             </div>
           </div>
         `;
@@ -1713,40 +2715,225 @@ class BMTIdle {
           </div>
           ` : ''}
           
-          <div class="grid grid-3">
-            <div class="card">
-              <div style="text-align: center; margin-bottom: 1rem;">
-                <img src="./images/monsters/goblin.svg" alt="Goblin" style="width: 64px; height: 64px;">
+          <!-- Low Level Monsters (1-10) -->
+          <div class="card mb-3">
+            <div class="card-header">
+              <h3>🟢 Low Level Monsters (1-10)</h3>
+            </div>
+            <div class="grid grid-3">
+              <div class="card">
+                <div style="text-align: center; margin-bottom: 1rem;">
+                  <img src="./images/monsters/chicken.svg" alt="Chicken" style="width: 64px; height: 64px;">
+                </div>
+                <h3>🐔 Wild Chicken</h3>
+                <p>Level 1 required</p>
+                <p>HP: 6 | Attack: 1 | Defence: 0</p>
+                <p>Attack Speed: 2.5s | Drops: 1-5 coins</p>
+                <p class="text-gold">1 XP per skill per kill</p>
+                <button class="btn btn-primary" onclick="game.startCombatTraining('chicken')">
+                  Fight Chickens
+                </button>
               </div>
-              <h3>Fight Goblins</h3>
-              <p>Level 1 required</p>
-              <p>HP: 12 | Attack: 1 | Defence: 1</p>
-              <p>Attack Speed: 4s | Drops: 5-15 coins</p>
-              <p class="text-gold">4 XP per skill per kill</p>
-              <button class="btn btn-primary" onclick="console.log('Fight Goblins clicked!'); game.startCombatTraining('goblin')">
-                Fight Goblins
-              </button>
+              <div class="card">
+                <div style="text-align: center; margin-bottom: 1rem;">
+                  <img src="./images/monsters/rat.svg" alt="Rat" style="width: 64px; height: 64px;">
+                </div>
+                <h3>🐀 Giant Rat</h3>
+                <p>Level 1 required</p>
+                <p>HP: 8 | Attack: 1 | Defence: 0</p>
+                <p>Attack Speed: 3s | Drops: 2-8 coins</p>
+                <p class="text-gold">2 XP per skill per kill</p>
+                <button class="btn btn-primary" onclick="game.startCombatTraining('rat')">
+                  Fight Rats
+                </button>
+              </div>
+              <div class="card">
+                <div style="text-align: center; margin-bottom: 1rem;">
+                  <img src="./images/monsters/goblin.svg" alt="Goblin" style="width: 64px; height: 64px;">
+                </div>
+                <h3>👹 Goblin</h3>
+                <p>Level 2 required</p>
+                <p>HP: 12 | Attack: 1 | Defence: 1</p>
+                <p>Attack Speed: 4s | Drops: 5-15 coins</p>
+                <p class="text-gold">4 XP per skill per kill</p>
+                <button class="btn btn-primary" onclick="game.startCombatTraining('goblin')">
+                  Fight Goblins
+                </button>
+              </div>
+              <div class="card">
+                <div style="text-align: center; margin-bottom: 1rem;">
+                  <img src="./images/monsters/cow.svg" alt="Cow" style="width: 64px; height: 64px;">
+                </div>
+                <h3>🐄 Wild Cow</h3>
+                <p>Level 2 required</p>
+                <p>HP: 18 | Attack: 1 | Defence: 2</p>
+                <p>Attack Speed: 5s | Drops: 8-20 coins</p>
+                <p class="text-gold">6 XP per skill per kill</p>
+                <button class="btn btn-primary" onclick="game.startCombatTraining('cow')">
+                  Fight Cows
+                </button>
+              </div>
+              <div class="card">
+                <div style="text-align: center; margin-bottom: 1rem;">
+                  <img src="./images/monsters/spider.svg" alt="Spider" style="width: 64px; height: 64px;">
+                </div>
+                <h3>🕷️ Giant Spider</h3>
+                <p>Level 3 required</p>
+                <p>HP: 15 | Attack: 2 | Defence: 1</p>
+                <p>Attack Speed: 3.5s | Drops: 6-18 coins</p>
+                <p class="text-gold">5 XP per skill per kill</p>
+                <button class="btn btn-primary" ${userSkill.level < 3 ? 'disabled' : ''} onclick="game.startCombatTraining('spider')">
+                  Fight Spiders
+                </button>
+              </div>
+              <div class="card">
+                <div style="text-align: center; margin-bottom: 1rem;">
+                  <img src="./images/monsters/wolf.svg" alt="Wolf" style="width: 64px; height: 64px;">
+                </div>
+                <h3>🐺 Wild Wolf</h3>
+                <p>Level 5 required</p>
+                <p>HP: 25 | Attack: 4 | Defence: 2</p>
+                <p>Attack Speed: 3s | Drops: 12-25 coins</p>
+                <p class="text-gold">8 XP per skill per kill</p>
+                <button class="btn btn-primary" ${userSkill.level < 5 ? 'disabled' : ''} onclick="game.startCombatTraining('wolf')">
+                  Fight Wolves
+                </button>
+              </div>
             </div>
-            <div class="card">
-              <h3>🐄 Fight Cows</h3>
-              <p>Level 1 required</p>
-              <p>HP: 18 | Attack: 1 | Defence: 2</p>
-              <p>Attack Speed: 5s | Drops: 8-20 coins</p>
-              <p class="text-gold">6 XP per skill per kill</p>
-              <button class="btn btn-primary" onclick="game.startCombatTraining('cow')">
-                Fight Cows
-              </button>
+          </div>
+
+          <!-- Mid Level Monsters (10-25) -->
+          <div class="card mb-3">
+            <div class="card-header">
+              <h3>🟡 Mid Level Monsters (10-25)</h3>
             </div>
-            <div class="card">
-              <h3>💀 Fight Skeletons</h3>
-              <p>Level 10 required</p>
-              <p>HP: 35 | Attack: 12 | Defence: 8</p>
-              <p>Attack Speed: 3.5s | Drops: 15-35 coins</p>
-              <p class="text-gold">12 XP per skill per kill</p>
-              <button class="btn btn-primary" ${userSkill.level < 10 ? 'disabled' : ''} 
-                onclick="game.startCombatTraining('skeleton')">
-                Fight Skeletons
-              </button>
+            <div class="grid grid-3">
+              <div class="card">
+                <div style="text-align: center; margin-bottom: 1rem;">
+                  <img src="./images/monsters/orc.svg" alt="Orc" style="width: 64px; height: 64px;">
+                </div>
+                <h3>👹 Orc Warrior</h3>
+                <p>Level 12 required</p>
+                <p>HP: 40 | Attack: 10 | Defence: 6</p>
+                <p>Attack Speed: 4s | Drops: 20-40 coins</p>
+                <p class="text-gold">10 XP per skill per kill</p>
+                <button class="btn btn-primary" ${userSkill.level < 12 ? 'disabled' : ''} onclick="game.startCombatTraining('orc')">
+                  Fight Orcs
+                </button>
+              </div>
+              <div class="card">
+                <div style="text-align: center; margin-bottom: 1rem;">
+                  <img src="./images/monsters/skeleton.svg" alt="Skeleton" style="width: 64px; height: 64px;">
+                </div>
+                <h3>💀 Skeleton</h3>
+                <p>Level 15 required</p>
+                <p>HP: 35 | Attack: 12 | Defence: 8</p>
+                <p>Attack Speed: 3.5s | Drops: 15-35 coins</p>
+                <p class="text-gold">12 XP per skill per kill</p>
+                <button class="btn btn-primary" ${userSkill.level < 15 ? 'disabled' : ''} onclick="game.startCombatTraining('skeleton')">
+                  Fight Skeletons
+                </button>
+              </div>
+              <div class="card">
+                <div style="text-align: center; margin-bottom: 1rem;">
+                  <img src="./images/monsters/troll.svg" alt="Troll" style="width: 64px; height: 64px;">
+                </div>
+                <h3>👹 Cave Troll</h3>
+                <p>Level 18 required</p>
+                <p>HP: 60 | Attack: 15 | Defence: 10</p>
+                <p>Attack Speed: 4.5s | Drops: 30-60 coins</p>
+                <p class="text-gold">15 XP per skill per kill</p>
+                <button class="btn btn-primary" ${userSkill.level < 18 ? 'disabled' : ''} onclick="game.startCombatTraining('troll')">
+                  Fight Trolls
+                </button>
+              </div>
+              <div class="card">
+                <div style="text-align: center; margin-bottom: 1rem;">
+                  <img src="./images/monsters/dark_wizard.svg" alt="Dark Wizard" style="width: 64px; height: 64px;">
+                </div>
+                <h3>🧙‍♂️ Dark Wizard</h3>
+                <p>Level 20 required</p>
+                <p>HP: 45 | Attack: 18 | Defence: 12</p>
+                <p>Attack Speed: 3s | Drops: 25-50 coins</p>
+                <p class="text-gold">18 XP per skill per kill</p>
+                <button class="btn btn-primary" ${userSkill.level < 20 ? 'disabled' : ''} onclick="game.startCombatTraining('dark_wizard')">
+                  Fight Dark Wizards
+                </button>
+              </div>
+              <div class="card">
+                <div style="text-align: center; margin-bottom: 1rem;">
+                  <img src="./images/monsters/bandit.svg" alt="Bandit" style="width: 64px; height: 64px;">
+                </div>
+                <h3>🗡️ Highway Bandit</h3>
+                <p>Level 22 required</p>
+                <p>HP: 50 | Attack: 16 | Defence: 14</p>
+                <p>Attack Speed: 3.5s | Drops: 35-70 coins</p>
+                <p class="text-gold">20 XP per skill per kill</p>
+                <button class="btn btn-primary" ${userSkill.level < 22 ? 'disabled' : ''} onclick="game.startCombatTraining('bandit')">
+                  Fight Bandits
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- High Level Monsters (25+) -->
+          <div class="card mb-3">
+            <div class="card-header">
+              <h3>🔴 High Level Monsters (25+)</h3>
+            </div>
+            <div class="grid grid-3">
+              <div class="card">
+                <div style="text-align: center; margin-bottom: 1rem;">
+                  <img src="./images/monsters/dragon.svg" alt="Dragon" style="width: 64px; height: 64px;">
+                </div>
+                <h3>🐉 Young Dragon</h3>
+                <p>Level 30 required</p>
+                <p>HP: 100 | Attack: 25 | Defence: 20</p>
+                <p>Attack Speed: 5s | Drops: 100-200 coins</p>
+                <p class="text-gold">30 XP per skill per kill</p>
+                <button class="btn btn-primary" ${userSkill.level < 30 ? 'disabled' : ''} onclick="game.startCombatTraining('dragon')">
+                  Fight Dragons
+                </button>
+              </div>
+              <div class="card">
+                <div style="text-align: center; margin-bottom: 1rem;">
+                  <img src="./images/monsters/demon.svg" alt="Demon" style="width: 64px; height: 64px;">
+                </div>
+                <h3>👹 Lesser Demon</h3>
+                <p>Level 35 required</p>
+                <p>HP: 120 | Attack: 30 | Defence: 25</p>
+                <p>Attack Speed: 4s | Drops: 150-300 coins</p>
+                <p class="text-gold">35 XP per skill per kill</p>
+                <button class="btn btn-primary" ${userSkill.level < 35 ? 'disabled' : ''} onclick="game.startCombatTraining('demon')">
+                  Fight Demons
+                </button>
+              </div>
+              <div class="card">
+                <div style="text-align: center; margin-bottom: 1rem;">
+                  <img src="./images/monsters/lich.svg" alt="Lich" style="width: 64px; height: 64px;">
+                </div>
+                <h3>💀 Ancient Lich</h3>
+                <p>Level 40 required</p>
+                <p>HP: 80 | Attack: 40 | Defence: 35</p>
+                <p>Attack Speed: 3s | Drops: 200-400 coins</p>
+                <p class="text-gold">40 XP per skill per kill</p>
+                <button class="btn btn-primary" ${userSkill.level < 40 ? 'disabled' : ''} onclick="game.startCombatTraining('lich')">
+                  Fight Liches
+                </button>
+              </div>
+              <div class="card">
+                <div style="text-align: center; margin-bottom: 1rem;">
+                  <img src="./images/monsters/giant.svg" alt="Giant" style="width: 64px; height: 64px;">
+                </div>
+                <h3>👹 Mountain Giant</h3>
+                <p>Level 45 required</p>
+                <p>HP: 200 | Attack: 35 | Defence: 30</p>
+                <p>Attack Speed: 6s | Drops: 300-600 coins</p>
+                <p class="text-gold">45 XP per skill per kill</p>
+                <button class="btn btn-primary" ${userSkill.level < 45 ? 'disabled' : ''} onclick="game.startCombatTraining('giant')">
+                  Fight Giants
+                </button>
+              </div>
             </div>
           </div>
         `;
@@ -1815,17 +3002,88 @@ class BMTIdle {
           </div>
         `;
       
+      case 'herblore':
+        return `
+          <div class="grid grid-3">
+            <div class="card ${userSkill.level < 1 ? 'disabled-card' : ''}">
+              <h3>Clean Herbs</h3>
+              <p>Level 1 required</p>
+              <p>12 XP per herb (2s each)</p>
+              <button class="btn btn-primary" ${userSkill.level < 1 ? 'disabled' : ''} onclick="game.trainSkill('herblore', 'clean_herbs', 12, 2000, 'Cleaning Herbs')">
+                Clean Herbs
+              </button>
+            </div>
+            <div class="card ${userSkill.level < 3 ? 'disabled-card' : ''}">
+              <h3>Make Potions</h3>
+              <p>Level 3 required</p>
+              <p>25 XP per potion (4s each)</p>
+              <button class="btn btn-primary" ${userSkill.level < 3 ? 'disabled' : ''} onclick="game.trainSkill('herblore', 'make_potions', 25, 4000, 'Making Potions')">
+                Make Potions
+              </button>
+            </div>
+          </div>
+        `;
+      
+      case 'crafting':
+        return `
+          <div class="grid grid-3">
+            <div class="card ${userSkill.level < 1 ? 'disabled-card' : ''}">
+              <h3>Make Jewelry</h3>
+              <p>Level 1 required</p>
+              <p>18 XP per item (3s each)</p>
+              <button class="btn btn-primary" ${userSkill.level < 1 ? 'disabled' : ''} onclick="game.trainSkill('crafting', 'make_jewelry', 18, 3000, 'Making Jewelry')">
+                Make Jewelry
+              </button>
+            </div>
+            <div class="card ${userSkill.level < 5 ? 'disabled-card' : ''}">
+              <h3>Leather Work</h3>
+              <p>Level 5 required</p>
+              <p>30 XP per item (5s each)</p>
+              <button class="btn btn-primary" ${userSkill.level < 5 ? 'disabled' : ''} onclick="game.trainSkill('crafting', 'leather_work', 30, 5000, 'Leather Work')">
+                Leather Work
+              </button>
+            </div>
+          </div>
+        `;
+      
+      case 'runecrafting':
+        return `
+          <div class="grid grid-3">
+            <div class="card ${userSkill.level < 1 ? 'disabled-card' : ''}">
+              <h3>Create Runes</h3>
+              <p>Level 1 required</p>
+              <p>20 XP per rune (4s each)</p>
+              <button class="btn btn-primary" ${userSkill.level < 1 ? 'disabled' : ''} onclick="game.trainSkill('runecrafting', 'create_runes', 20, 4000, 'Creating Runes')">
+                Create Runes
+              </button>
+            </div>
+            <div class="card ${userSkill.level < 10 ? 'disabled-card' : ''}">
+              <h3>Enchant Items</h3>
+              <p>Level 10 required</p>
+              <p>50 XP per enchant (8s each)</p>
+              <button class="btn btn-primary" ${userSkill.level < 10 ? 'disabled' : ''} onclick="game.trainSkill('runecrafting', 'enchant_items', 50, 8000, 'Enchanting Items')">
+                Enchant Items
+              </button>
+            </div>
+          </div>
+        `;
+      
       default:
         return '<p>Training actions for this skill are under development!</p>';
     }
   }
 
   renderProfile() {
+    // Check if viewing another player's profile
+    if (this.selectedPlayer && this.selectedPlayer !== this.currentUser.username) {
+      return this.renderOtherPlayerProfile(this.selectedPlayer);
+    }
+    
     const totalLevel = Object.values(this.currentUser.skills).reduce((sum, skill) => sum + skill.level, 0);
     
     return `
-      <div class="grid grid-2">
-        <div class="card">
+      <div class="profile-container">
+        <div class="dashboard-card">
           <div class="card-header">
             <h2 class="card-title">Player Information</h2>
           </div>
@@ -1849,10 +3107,50 @@ class BMTIdle {
         
         <div class="card">
           <div class="card-header">
-            <h2 class="card-title">Achievements</h2>
+            <h2 class="card-title">🏆 Achievements</h2>
+            <div class="text-muted">Track your progress and unlock rewards</div>
           </div>
-          <div class="text-center text-muted" style="padding: 2rem;">
-            Achievements system coming soon!
+          
+          <!-- Achievement Tabs -->
+          <div style="display: flex; gap: 0.4rem; margin-bottom: 0.75rem; flex-wrap: wrap;">
+            <button class="btn btn-primary" onclick="game.showAchievementTab('general')" id="achievement-tab-general">
+              🌟 General
+            </button>
+            <button class="btn btn-secondary" onclick="game.showAchievementTab('skills')" id="achievement-tab-skills">
+              ⚡ Skills
+            </button>
+            <button class="btn btn-secondary" onclick="game.showAchievementTab('combat')" id="achievement-tab-combat">
+              ⚔️ Combat
+            </button>
+            <button class="btn btn-secondary" onclick="game.showAchievementTab('house')" id="achievement-tab-house">
+              🏠 House
+            </button>
+            <button class="btn btn-secondary" onclick="game.showAchievementTab('guild')" id="achievement-tab-guild">
+              🏛️ Guild
+            </button>
+          </div>
+          
+          <!-- Achievement Content -->
+          <div id="achievement-content">
+            ${this.renderGeneralAchievements()}
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-header">
+            <h3>🎨 Theme Settings</h3>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Choose Theme</label>
+            <select id="theme-selector" class="form-input" onchange="game.changeTheme(this.value)">
+              <option value="default">🌙 Dark (Default)</option>
+              <option value="classic">⚔️ Classic OSRS</option>
+              <option value="forest">🌲 Forest Green</option>
+              <option value="ocean">🌊 Ocean Blue</option>
+              <option value="fire">🔥 Fire Red</option>
+              <option value="purple">🔮 Purple Magic</option>
+              <option value="cyber">⚡ Cyber Neon</option>
+            </select>
           </div>
         </div>
         
@@ -1863,6 +3161,9 @@ class BMTIdle {
           <p class="text-muted">Debug functions for testing</p>
           <button class="btn btn-secondary" onclick="game.giveStartingEquipment()" style="margin-top: 1rem;">
             ⚔️ Give Starting Equipment
+          </button>
+          <button class="btn btn-secondary" onclick="game.testLevelUp()" style="margin-top: 0.5rem;">
+            🎉 Test Level Up Effect
           </button>
         </div>
         
@@ -1881,277 +3182,3057 @@ class BMTIdle {
 
 
   renderShop() {
+    const currentCoins = this.currentUser.inventory.coins || 0;
+    
     return `
-      <div class="card">
-        <div class="card-header">
-          <h2 class="card-title">🏪 General Store</h2>
-          <div class="text-muted">Buy essential items with coins</div>
-        </div>
-        
-        <!-- Equipment Section -->
-        <div class="card" style="margin-bottom: 1rem;">
+      <div class="shop-container">
+        <!-- Header -->
+        <div class="dashboard-card">
           <div class="card-header">
-            <h3>⚔️ Equipment</h3>
-          </div>
-          <div class="grid grid-3">
-            <div class="card">
-              <h3>🗡️ Bronze Sword</h3>
-              <p>Price: 50 coins</p>
-              <p class="text-muted">+2 Attack, +1 Strength</p>
-              <button class="btn btn-primary" onclick="game.buyItem('bronze_sword', 50)">
-                Buy Bronze Sword
-              </button>
-            </div>
-            <div class="card">
-              <h3>⛑️ Bronze Helmet</h3>
-              <p>Price: 30 coins</p>
-              <p class="text-muted">+2 Defence</p>
-              <button class="btn btn-primary" onclick="game.buyItem('bronze_helmet', 30)">
-                Buy Bronze Helmet
-              </button>
-            </div>
-            <div class="card">
-              <h3>🛡️ Bronze Platebody</h3>
-              <p>Price: 80 coins</p>
-              <p class="text-muted">+5 Defence</p>
-              <button class="btn btn-primary" onclick="game.buyItem('bronze_platebody', 80)">
-                Buy Bronze Platebody
-              </button>
-            </div>
-            <div class="card">
-              <h3>💍 Gold Ring</h3>
-              <p>Price: 100 coins</p>
-              <p class="text-muted">+1 Defence</p>
-              <button class="btn btn-primary" onclick="game.buyItem('gold_ring', 100)">
-                Buy Gold Ring
-              </button>
-            </div>
-            <div class="card">
-              <h3>📿 Gold Necklace</h3>
-              <p>Price: 200 coins</p>
-              <p class="text-muted">+1 Attack, +1 Strength</p>
-              <button class="btn btn-primary" onclick="game.buyItem('gold_necklace', 200)">
-                Buy Gold Necklace
-              </button>
-            </div>
-            <div class="card">
-              <h3>🧥 Cape</h3>
-              <p>Price: 50 coins</p>
-              <p class="text-muted">+1 Defence</p>
-              <button class="btn btn-primary" onclick="game.buyItem('cape', 50)">
-                Buy Cape
-              </button>
+            <h2 class="card-title">🏪 General Store</h2>
+            <div class="text-muted">Buy essential items with coins</div>
+            <div class="coins-display">
+              <span class="coins-icon">🪙</span>
+              <span class="coins-amount">${this.formatCoins(currentCoins)}</span>
             </div>
           </div>
         </div>
         
-        <!-- Seeds Section -->
-        <div class="card">
+        <!-- Search -->
+        <div class="dashboard-card">
           <div class="card-header">
-            <h3>🌱 Seeds & Supplies</h3>
+            <h3>🔍 Search Starter Items</h3>
           </div>
-          <div class="grid grid-3">
-          <div class="card">
-            <h3>🌰 Potato Seeds</h3>
-            <p>Price: 5 coins each</p>
-            <button class="btn btn-primary" onclick="game.buyItem('potato_seed', 5)">
-              Buy Potato Seeds
-            </button>
+          <div class="search-controls">
+            <input type="text" id="shop-search" placeholder="Search items..." class="form-input" onkeyup="game.filterShopItems()">
+            <button class="btn btn-secondary" onclick="game.clearShopFilters()">Clear</button>
           </div>
-          <div class="card">
-            <h3>🌾 Wheat Seeds</h3>
-            <p>Price: 15 coins each</p>
-            <button class="btn btn-primary" onclick="game.buyItem('wheat_seed', 15)">
-              Buy Wheat Seeds
-            </button>
+        </div>
+        
+        <!-- Shop Items Grid -->
+        <div class="dashboard-card">
+          <div class="card-header">
+            <h3>🛒 Available Items</h3>
           </div>
-          <div class="card">
-            <h3>🌿 Herb Seeds</h3>
-            <p>Price: 25 coins each</p>
-            <button class="btn btn-primary" onclick="game.buyItem('herb_seed', 25)">
-              Buy Herb Seeds
-            </button>
-          </div>
-          <div class="card">
-            <h3>🧪 Vials</h3>
-            <p>Price: 2 coins each</p>
-            <p class="text-muted">Essential for potions</p>
-            <button class="btn btn-primary" onclick="game.buyItem('vial', 2)">
-              Buy Vials
-            </button>
-          </div>
-          <div class="card">
-            <h3>🥕 Carrot Seeds</h3>
-            <p>Price: 35 coins each</p>
-            <p class="text-muted">Level 35 farming required</p>
-            <button class="btn btn-primary" onclick="game.buyItem('carrot_seed', 35)">
-              Buy Carrot Seeds
-            </button>
-          </div>
-          <div class="card">
-            <h3>🥬 Cabbage Seeds</h3>
-            <p>Price: 50 coins each</p>
-            <p class="text-muted">Level 50 farming required</p>
-            <button class="btn btn-primary" onclick="game.buyItem('cabbage_seed', 50)">
-              Buy Cabbage Seeds
-            </button>
+          <div id="shop-items-container">
+            ${this.renderShopItems()}
           </div>
         </div>
       </div>
     `;
+  }
+
+  renderShopItems() {
+    // Only show starter/basic items in the shop
+    const starterItems = [
+      // Basic Tools
+      { id: 'copper_pickaxe', name: 'Copper Pickaxe', category: 'tool', value: 25, level: 1, stats: { mining: 1 } },
+      { id: 'copper_axe', name: 'Copper Axe', category: 'tool', value: 25, level: 1, stats: { woodcutting: 1 } },
+      { id: 'copper_fishing_rod', name: 'Copper Fishing Rod', category: 'tool', value: 30, level: 1, stats: { fishing: 1 } },
+      
+      // Copper Equipment Only
+      { id: 'copper_sword', name: 'Copper Sword', category: 'weapon', value: 50, level: 1, stats: { attack: 2, strength: 1 } },
+      { id: 'copper_helmet', name: 'Copper Helmet', category: 'armor', value: 30, level: 1, stats: { defence: 2 } },
+      { id: 'copper_platebody', name: 'Copper Platebody', category: 'armor', value: 80, level: 1, stats: { defence: 5 } },
+      { id: 'copper_platelegs', name: 'Copper Platelegs', category: 'armor', value: 60, level: 1, stats: { defence: 3 } },
+      { id: 'copper_boots', name: 'Copper Boots', category: 'armor', value: 20, level: 1, stats: { defence: 1 } },
+      { id: 'copper_gloves', name: 'Copper Gloves', category: 'armor', value: 15, level: 1, stats: { defence: 1 } },
+      
+      // Basic Jewelry
+      { id: 'gold_ring', name: 'Gold Ring', category: 'jewelry', value: 100, level: 1, stats: { defence: 1 } },
+      { id: 'gold_necklace', name: 'Gold Necklace', category: 'jewelry', value: 200, level: 1, stats: { attack: 1, strength: 1 } },
+      { id: 'cape', name: 'Cape', category: 'armor', value: 50, level: 1, stats: { defence: 1 } },
+      
+      // Seeds & Basic Supplies
+      { id: 'potato_seed', name: 'Potato Seed', category: 'seed', value: 1 },
+      { id: 'wheat_seed', name: 'Wheat Seed', category: 'seed', value: 3 },
+      { id: 'vial', name: 'Vial', category: 'resource', value: 1 },
+      
+      // Basic Food
+      { id: 'bread', name: 'Bread', category: 'food', value: 8, heals: 5 }
+    ];
+
+    const categories = {
+      'tool': { name: '🔧 Basic Tools', items: [] },
+      'weapon': { name: '⚔️ Bronze Weapons', items: [] },
+      'armor': { name: '🛡️ Bronze Armor', items: [] },
+      'jewelry': { name: '💎 Basic Jewelry', items: [] },
+      'seed': { name: '🌱 Seeds & Supplies', items: [] },
+      'food': { name: '🍖 Basic Food', items: [] }
+    };
+
+    // Organize starter items by category
+    starterItems.forEach(item => {
+      if (categories[item.category]) {
+        categories[item.category].items.push(item);
+      }
+    });
+
+    let html = '';
+    Object.keys(categories).forEach(cat => {
+      if (categories[cat].items.length > 0) {
+        html += `
+          <div class="card shop-category" data-category="${cat}" style="margin-bottom: 1rem;">
+            <div class="card-header">
+              <h3>${categories[cat].name}</h3>
+            </div>
+            <div class="grid grid-4">
+              ${categories[cat].items.map(item => this.renderShopItem(item)).join('')}
+            </div>
+          </div>
+        `;
+      }
+    });
+
+    return html;
+  }
+
+  renderShopItem(item) {
+    const canAfford = (this.currentUser.inventory.coins || 0) >= item.value;
+    const hasLevel = !item.level || this.getPlayerLevel(item.level) >= item.level;
+    const isDisabled = !canAfford || !hasLevel;
+    
+    let statsText = '';
+    if (item.stats) {
+      const statParts = [];
+      if (item.stats.attack) statParts.push(`+${item.stats.attack} Atk`);
+      if (item.stats.strength) statParts.push(`+${item.stats.strength} Str`);
+      if (item.stats.defence) statParts.push(`+${item.stats.defence} Def`);
+      if (item.stats.mining) statParts.push(`+${item.stats.mining} Mining`);
+      if (item.stats.woodcutting) statParts.push(`+${item.stats.woodcutting} WC`);
+      if (item.stats.fishing) statParts.push(`+${item.stats.fishing} Fish`);
+      statsText = statParts.join(', ');
+    }
+
+    let healText = '';
+    if (item.heals) {
+      healText = `Heals: ${item.heals} HP`;
+    }
+
+    return `
+      <div class="card shop-item-compact ${isDisabled ? 'disabled-card' : ''}" data-item-id="${item.id}" data-category="${item.category}">
+        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+          <div style="font-size: 1.2rem;">${this.getItemIcon(item.id)}</div>
+          <div style="flex: 1;">
+            <h4 style="margin: 0; font-size: 0.9rem;">${item.name}</h4>
+            <p style="margin: 0; font-weight: 600; color: var(--osrs-gold); font-size: 0.8rem;">
+              ${this.formatCoins(item.value)}
+            </p>
+          </div>
+        </div>
+        
+        ${statsText ? `<p class="text-muted" style="font-size: 0.7rem; margin: 0.25rem 0;">${statsText}</p>` : ''}
+        ${healText ? `<p class="text-muted" style="font-size: 0.7rem; margin: 0.25rem 0;">${healText}</p>` : ''}
+        
+        <div style="display: flex; gap: 0.25rem; align-items: center; margin-top: 0.5rem;">
+          <input type="number" id="qty-${item.id}" value="1" min="1" max="100" class="quantity-input" style="width: 50px; font-size: 0.75rem;">
+          <button class="btn btn-primary btn-small" onclick="game.buyItemQuantity('${item.id}', ${item.value})" ${isDisabled ? 'disabled' : ''} style="font-size: 0.75rem; padding: 4px 8px;">
+            Buy
+          </button>
+        </div>
+        
+        ${!canAfford ? '<p class="text-red" style="font-size: 0.65rem; text-align: center; margin: 0.25rem 0;">No coins</p>' : ''}
+        ${!hasLevel ? '<p class="text-red" style="font-size: 0.65rem; text-align: center; margin: 0.25rem 0;">Low level</p>' : ''}
+      </div>
+    `;
+  }
+
+  filterShopItems() {
+    const searchTerm = document.getElementById('shop-search').value.toLowerCase();
+    const categories = document.querySelectorAll('.shop-category');
+
+    categories.forEach(category => {
+      const categoryItems = category.querySelectorAll('.shop-item-compact');
+      let hasVisibleItems = false;
+      
+      categoryItems.forEach(item => {
+        const itemName = item.querySelector('h4').textContent.toLowerCase();
+        const itemVisible = !searchTerm || itemName.includes(searchTerm);
+        
+        if (itemVisible) {
+          item.style.display = 'block';
+          hasVisibleItems = true;
+        } else {
+          item.style.display = 'none';
+        }
+      });
+      
+      category.style.display = hasVisibleItems ? 'block' : 'none';
+    });
+  }
+
+  clearShopFilters() {
+    document.getElementById('shop-search').value = '';
+    this.filterShopItems();
+  }
+
+  buyItemQuantity(itemId, pricePerItem) {
+    const quantityInput = document.getElementById(`qty-${itemId}`);
+    const quantity = parseInt(quantityInput.value) || 1;
+    const totalPrice = pricePerItem * quantity;
+    
+    if (this.currentUser.inventory.coins < totalPrice) {
+      this.showNotification(`Not enough coins! Need ${this.formatCoins(totalPrice)}, have ${this.formatCoins(this.currentUser.inventory.coins)}`);
+      return;
+    }
+    
+    this.currentUser.inventory.coins -= totalPrice;
+    this.currentUser.inventory[itemId] = (this.currentUser.inventory[itemId] || 0) + quantity;
+    
+    const itemName = this.gameData.items[itemId].name;
+    this.showNotification(`Bought ${quantity} ${itemName} for ${this.formatCoins(totalPrice)}!`);
+    
+    this.saveUserData();
+    this.render();
+  }
+
+  getPlayerLevel(requiredLevel) {
+    // For equipment items, we'll check the appropriate combat skill level
+    // For other items, we'll check the relevant skill level
+    const combatSkills = ['attack', 'strength', 'defence', 'hitpoints'];
+    const combatLevel = combatSkills.reduce((max, skill) => {
+      const level = this.currentUser.skills[skill]?.level || 1;
+      return Math.max(max, level);
+    }, 1);
+    
+    return combatLevel;
   }
 
   renderMarket() {
+    const currentCoins = this.currentUser.inventory.coins || 0;
+    
+    return `
+      <div class="market-container">
+        <!-- Header -->
+        <div class="dashboard-card">
+          <div class="card-header">
+            <h2 class="card-title">💰 Player Market</h2>
+            <div class="text-muted">Trade items with other players</div>
+            <div class="coins-display">
+              <span class="coins-icon">🪙</span>
+              <span class="coins-amount">${this.formatCoins(currentCoins)}</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Market Tabs -->
+        <div class="market-tabs">
+            <button class="btn btn-primary" onclick="game.showMarketTab('browse')" id="market-tab-browse">
+              🔍 Browse Items
+            </button>
+            <button class="btn btn-secondary" onclick="game.showMarketTab('sell')" id="market-tab-sell">
+              💰 Sell Items
+            </button>
+            <button class="btn btn-secondary" onclick="game.showMarketTab('orders')" id="market-tab-orders">
+              📋 My Orders
+            </button>
+            <button class="btn btn-secondary" onclick="game.showMarketTab('history')" id="market-tab-history">
+              📊 History
+            </button>
+        </div>
+        
+        <!-- Market Content -->
+        <div class="dashboard-card">
+          <div id="market-content">
+            ${this.renderMarketBrowse()}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  renderMarketBrowse() {
+    // Simulate some market listings from "other players"
+    const marketListings = this.generateMarketListings();
+    
     return `
       <div class="card">
         <div class="card-header">
-          <h2 class="card-title">💰 Player Market</h2>
-          <div class="text-muted">Trade items with other players</div>
+          <h3>🔍 Browse Market Listings</h3>
+          <div style="display: flex; gap: 1rem; align-items: center; margin-top: 1rem;">
+            <input type="text" id="market-search" placeholder="Search items..." class="form-input" style="flex: 1;" onkeyup="game.filterMarketItems()">
+            <select id="market-category" class="form-input" onchange="game.filterMarketItems()" style="min-width: 150px;">
+              <option value="">All Categories</option>
+              <option value="weapon">⚔️ Weapons</option>
+              <option value="armor">🛡️ Armor</option>
+              <option value="jewelry">💎 Jewelry</option>
+              <option value="resource">📦 Resources</option>
+              <option value="food">🍖 Food</option>
+            </select>
+            <button class="btn btn-secondary" onclick="game.clearMarketFilters()">Clear</button>
+          </div>
         </div>
         
-        <div class="text-center" style="padding: 2rem;">
-          <h3>Market System</h3>
-          <p class="text-muted">The player trading system will be available when multiplayer features are implemented.</p>
-          <p>For now, you can sell items to the general store for half their value.</p>
-          
-          <div class="grid grid-2" style="margin-top: 2rem;">
-            <button class="btn btn-secondary" onclick="game.navigateTo('shop')">
-              Visit Shop Instead
+        <div class="grid grid-2">
+          ${marketListings.map(listing => this.renderMarketListing(listing)).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  renderMarketSell() {
+    const userInventory = this.currentUser.inventory;
+    const sellableItems = Object.keys(userInventory).filter(itemId => 
+      itemId !== 'coins' && userInventory[itemId] > 0 && this.gameData.items[itemId]
+    );
+    
+    return `
+      <div class="card">
+        <div class="card-header">
+          <h3>💰 List Items for Sale</h3>
+        </div>
+        
+        <div class="grid grid-2">
+          ${sellableItems.map(itemId => this.renderSellItem(itemId, userInventory[itemId])).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  renderMarketOrders() {
+    const userOrders = this.currentUser.marketOrders || [];
+    
+    return `
+      <div class="card">
+        <div class="card-header">
+          <h3>📋 My Market Orders</h3>
+        </div>
+        
+        ${userOrders.length === 0 ? `
+          <div class="text-center" style="padding: 2rem;">
+            <p class="text-muted">No active orders</p>
+            <p>List items for sale or create buy orders to see them here.</p>
+          </div>
+        ` : `
+          <div class="grid grid-1">
+            ${userOrders.map(order => this.renderMarketOrder(order)).join('')}
+          </div>
+        `}
+      </div>
+    `;
+  }
+
+  renderMarketHistory() {
+    const userHistory = this.currentUser.marketHistory || [];
+    
+    return `
+      <div class="card">
+        <div class="card-header">
+          <h3>📊 Trading History</h3>
+        </div>
+        
+        ${userHistory.length === 0 ? `
+          <div class="text-center" style="padding: 2rem;">
+            <p class="text-muted">No trading history</p>
+            <p>Your completed trades will appear here.</p>
+          </div>
+        ` : `
+          <div class="grid grid-1">
+            ${userHistory.map(transaction => this.renderMarketTransaction(transaction)).join('')}
+          </div>
+        `}
+      </div>
+    `;
+  }
+
+  generateMarketListings() {
+    // This will fetch real market listings from the server when multiplayer is enabled
+    // For now, return empty array since we're in local development mode
+    return this.currentUser.marketListings || [];
+  }
+
+  async fetchMarketListings() {
+    // This will be called when multiplayer is enabled
+    try {
+      const response = await fetch('/api/market/listings');
+      if (response.ok) {
+        const listings = await response.json();
+        this.currentUser.marketListings = listings;
+        return listings;
+      }
+    } catch (error) {
+      console.log('Market API not available (local mode)');
+    }
+    return [];
+  }
+
+  async createMarketListing(itemId, quantity, price) {
+    // This will create a real market listing when multiplayer is enabled
+    try {
+      const response = await fetch('/api/market/listings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          itemId: itemId,
+          quantity: quantity,
+          price: price,
+          sellerId: this.currentUser.id
+        })
+      });
+      
+      if (response.ok) {
+        const listing = await response.json();
+        this.showNotification(`Listed ${quantity} ${this.gameData.items[itemId].name} for ${this.formatCoins(price)} each!`);
+        return listing;
+      }
+    } catch (error) {
+      console.log('Market API not available (local mode)');
+      this.showNotification('Market listing feature will be available when multiplayer is enabled!');
+    }
+    return null;
+  }
+
+
+  renderMarketListing(listing) {
+    const canAfford = (this.currentUser.inventory.coins || 0) >= listing.price;
+    const totalPrice = listing.price * listing.quantity;
+    const isOwnListing = listing.sellerId === this.currentUser.id;
+    
+    return `
+      <div class="card market-listing ${!canAfford || isOwnListing ? 'disabled-card' : ''}">
+        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+          <div style="font-size: 1.2rem;">${this.getItemIcon(listing.itemId)}</div>
+          <div style="flex: 1;">
+            <h4 style="margin: 0; font-size: 0.9rem;">${listing.itemName}</h4>
+            <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">Seller: ${listing.sellerName}</p>
+          </div>
+        </div>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <div>
+            <p style="margin: 0; font-weight: 600; color: var(--osrs-gold);">${this.formatCoins(listing.price)} each</p>
+            <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">Qty: ${listing.quantity}</p>
+          </div>
+          <div style="text-align: right;">
+            <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">Total: ${this.formatCoins(totalPrice)}</p>
+            <p style="margin: 0; font-size: 0.7rem; color: var(--text-muted);">${this.formatTimeLeft(listing.expiresAt)}</p>
+          </div>
+        </div>
+        
+        ${isOwnListing ? `
+          <div style="text-align: center;">
+            <p style="margin: 0; font-size: 0.7rem; color: var(--text-muted);">Your listing</p>
+            <button class="btn btn-danger btn-small" onclick="game.cancelMarketListing('${listing.id}')" style="font-size: 0.75rem; padding: 4px 8px; margin-top: 0.25rem;">
+              Cancel
             </button>
-            <button class="btn btn-secondary" onclick="game.navigateTo('inventory')">
-              Manage Inventory
+          </div>
+        ` : `
+          <div style="display: flex; gap: 0.25rem;">
+            <input type="number" id="buy-qty-${listing.id}" value="1" min="1" max="${listing.quantity}" class="quantity-input" style="width: 60px; font-size: 0.75rem;">
+            <button class="btn btn-primary btn-small" onclick="game.buyFromMarket('${listing.id}')" ${!canAfford ? 'disabled' : ''} style="font-size: 0.75rem; padding: 4px 8px;">
+              Buy
+            </button>
+          </div>
+          ${!canAfford ? '<p class="text-red" style="font-size: 0.65rem; text-align: center; margin: 0.25rem 0;">No coins</p>' : ''}
+        `}
+      </div>
+    `;
+  }
+
+  formatTimeLeft(expiresAt) {
+    const now = new Date().getTime();
+    const expires = new Date(expiresAt).getTime();
+    const diff = expires - now;
+    
+    if (diff <= 0) return 'Expired';
+    
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
+  }
+
+  renderSellItem(itemId, quantity) {
+    const item = this.gameData.items[itemId];
+    const basePrice = item.value;
+    
+    return `
+      <div class="card">
+        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+          <div style="font-size: 1.2rem;">${this.getItemIcon(itemId)}</div>
+          <div style="flex: 1;">
+            <h4 style="margin: 0; font-size: 0.9rem;">${item.name}</h4>
+            <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">You have: ${quantity}</p>
+          </div>
+        </div>
+        
+        <div style="display: flex; gap: 0.25rem; align-items: center; margin-bottom: 0.5rem;">
+          <input type="number" id="sell-qty-${itemId}" value="1" min="1" max="${quantity}" class="quantity-input" style="width: 60px; font-size: 0.75rem;">
+          <input type="number" id="sell-price-${itemId}" value="${basePrice}" min="1" class="quantity-input" style="width: 80px; font-size: 0.75rem;" placeholder="Price">
+          <button class="btn btn-primary btn-small" onclick="game.listItemForSale('${itemId}')" style="font-size: 0.75rem; padding: 4px 8px;">
+            List
+          </button>
+        </div>
+        
+        <p style="margin: 0; font-size: 0.7rem; color: var(--text-muted);">Base value: ${this.formatCoins(basePrice)}</p>
+      </div>
+    `;
+  }
+
+  async listItemForSale(itemId) {
+    const quantityInput = document.getElementById(`sell-qty-${itemId}`);
+    const priceInput = document.getElementById(`sell-price-${itemId}`);
+    const quantity = parseInt(quantityInput.value) || 1;
+    const price = parseInt(priceInput.value) || 1;
+    
+    if (quantity > (this.currentUser.inventory[itemId] || 0)) {
+      this.showNotification('You don\'t have enough of this item!');
+      return;
+    }
+    
+    if (price < 1) {
+      this.showNotification('Price must be at least 1 coin!');
+      return;
+    }
+    
+    // Remove items from inventory
+    this.currentUser.inventory[itemId] -= quantity;
+    
+    // Create market listing
+    const listing = await this.createMarketListing(itemId, quantity, price);
+    
+    if (listing) {
+      // Add to user's market orders
+      if (!this.currentUser.marketOrders) this.currentUser.marketOrders = [];
+      this.currentUser.marketOrders.push({
+        id: listing.id,
+        type: 'sell',
+        itemId: itemId,
+        itemName: this.gameData.items[itemId].name,
+        quantity: quantity,
+        price: price,
+        createdAt: new Date().toISOString()
+      });
+      
+      this.saveUserData();
+      this.render();
+    } else {
+      // Restore items if listing failed
+      this.currentUser.inventory[itemId] += quantity;
+    }
+  }
+
+  async cancelMarketListing(listingId) {
+    try {
+      const response = await fetch(`/api/market/listings/${listingId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: this.currentUser.id })
+      });
+      
+      if (response.ok) {
+        this.showNotification('Market listing cancelled!');
+        // Remove from user's orders
+        this.currentUser.marketOrders = this.currentUser.marketOrders.filter(order => order.id !== listingId);
+        this.saveUserData();
+        this.render();
+      }
+    } catch (error) {
+      console.log('Market API not available (local mode)');
+      this.showNotification('Market cancellation will be available when multiplayer is enabled!');
+    }
+  }
+
+  renderMarketOrder(order) {
+    return `
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h4 style="margin: 0; font-size: 0.9rem;">${order.type === 'sell' ? 'Selling' : 'Buying'} ${order.itemName}</h4>
+            <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">Qty: ${order.quantity} @ ${this.formatCoins(order.price)} each</p>
+          </div>
+          <div style="text-align: right;">
+            <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">Total: ${this.formatCoins(order.price * order.quantity)}</p>
+            <button class="btn btn-danger btn-small" onclick="game.cancelMarketOrder('${order.id}')" style="font-size: 0.75rem; padding: 4px 8px;">
+              Cancel
             </button>
           </div>
         </div>
       </div>
     `;
+  }
+
+  renderMarketTransaction(transaction) {
+    return `
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h4 style="margin: 0; font-size: 0.9rem;">${transaction.type === 'bought' ? 'Bought' : 'Sold'} ${transaction.itemName}</h4>
+            <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">Qty: ${transaction.quantity} @ ${this.formatCoins(transaction.price)} each</p>
+          </div>
+          <div style="text-align: right;">
+            <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">Total: ${this.formatCoins(transaction.price * transaction.quantity)}</p>
+            <p style="margin: 0; font-size: 0.7rem; color: var(--text-muted);">${transaction.date}</p>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  showMarketTab(tab) {
+    // Update tab buttons
+    document.querySelectorAll('[id^="market-tab-"]').forEach(btn => {
+      btn.className = 'btn btn-secondary';
+    });
+    document.getElementById(`market-tab-${tab}`).className = 'btn btn-primary';
+    
+    // Update content
+    const content = document.getElementById('market-content');
+    switch(tab) {
+      case 'browse':
+        content.innerHTML = this.renderMarketBrowse();
+        break;
+      case 'sell':
+        content.innerHTML = this.renderMarketSell();
+        break;
+      case 'orders':
+        content.innerHTML = this.renderMarketOrders();
+        break;
+      case 'history':
+        content.innerHTML = this.renderMarketHistory();
+        break;
+    }
+  }
+
+  filterMarketItems() {
+    const searchTerm = document.getElementById('market-search').value.toLowerCase();
+    const categoryFilter = document.getElementById('market-category').value;
+    const listings = document.querySelectorAll('.market-listing');
+
+    listings.forEach(listing => {
+      const itemName = listing.querySelector('h4').textContent.toLowerCase();
+      const itemCategory = this.gameData.items[listing.dataset.itemId]?.category || '';
+      const itemVisible = (!searchTerm || itemName.includes(searchTerm)) && 
+                         (!categoryFilter || itemCategory === categoryFilter);
+      
+      listing.style.display = itemVisible ? 'block' : 'none';
+    });
+  }
+
+  clearMarketFilters() {
+    document.getElementById('market-search').value = '';
+    document.getElementById('market-category').value = '';
+    this.filterMarketItems();
+  }
+
+  async buyFromMarket(listingId) {
+    const quantityInput = document.getElementById(`buy-qty-${listingId}`);
+    const quantity = parseInt(quantityInput.value) || 1;
+    
+    // Find the listing
+    const listing = this.currentUser.marketListings?.find(l => l.id === listingId);
+    if (!listing) {
+      this.showNotification('Listing not found!');
+      return;
+    }
+    
+    if (quantity > listing.quantity) {
+      this.showNotification('Not enough quantity available!');
+      return;
+    }
+    
+    const totalPrice = listing.price * quantity;
+    if (totalPrice > (this.currentUser.inventory.coins || 0)) {
+      this.showNotification('Not enough coins!');
+      return;
+    }
+    
+    // Process the purchase via API
+    const result = await this.processMarketPurchase(listingId, quantity);
+    
+    if (result) {
+      // Add items to inventory
+      this.currentUser.inventory[listing.itemId] = (this.currentUser.inventory[listing.itemId] || 0) + quantity;
+      
+      // Add to trading history
+      if (!this.currentUser.marketHistory) this.currentUser.marketHistory = [];
+      this.currentUser.marketHistory.push({
+        type: 'bought',
+        itemId: listing.itemId,
+        itemName: listing.itemName,
+        quantity: quantity,
+        price: listing.price,
+        totalPrice: totalPrice,
+        sellerName: listing.sellerName,
+        date: new Date().toLocaleDateString()
+      });
+      
+      this.saveUserData();
+      this.render();
+    }
+  }
+
+  async processMarketPurchase(listingId, quantity) {
+    // This will process the actual purchase via API when multiplayer is enabled
+    try {
+      const response = await fetch('/api/market/buy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          listingId: listingId,
+          quantity: quantity,
+          buyerId: this.currentUser.id
+        })
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        this.showNotification(`Bought ${quantity} ${result.itemName} for ${this.formatCoins(result.totalPrice)}!`);
+        return result;
+      }
+    } catch (error) {
+      console.log('Market API not available (local mode)');
+      this.showNotification('Market purchasing will be available when multiplayer is enabled!');
+    }
+    return null;
+  }
+
+  cancelMarketOrder(orderId) {
+    // Remove from user's orders
+    this.currentUser.marketOrders = this.currentUser.marketOrders.filter(order => order.id !== orderId);
+    this.saveUserData();
+    this.render();
+    this.showNotification('Order cancelled!');
   }
 
   renderQuests() {
-    return `
-      <div class="card">
-        <div class="card-header">
-          <h2 class="card-title">📜 Daily Quests</h2>
-          <div class="text-muted">Complete quests for rewards - Reset daily!</div>
+    try {
+      const currentCoins = this.currentUser.inventory.coins || 0;
+      
+      return `
+      <div class="quest-container">
+        <!-- Header -->
+        <div class="dashboard-card">
+          <div class="card-header">
+            <h2 class="card-title">📜 Quest System</h2>
+            <div class="text-muted">Complete quests for rewards and progression</div>
+            <div class="coins-display">
+              <span class="coins-icon">🪙</span>
+              <span class="coins-amount">${this.formatCoins(currentCoins)}</span>
+            </div>
+          </div>
         </div>
         
-        <div class="grid grid-2">
-          <div class="card">
-            <h3>🪓 Lumberjack's Request</h3>
-            <p>Cut 25 logs of any type</p>
-            <p><strong>Reward:</strong> 500 XP + 100 coins</p>
-            <div class="text-muted">Progress: ${(this.currentUser.inventory.logs || 0) + (this.currentUser.inventory.oak_logs || 0)} / 25</div>
-            <button class="btn btn-success" ${(this.currentUser.inventory.logs || 0) + (this.currentUser.inventory.oak_logs || 0) < 25 ? 'disabled' : ''}>
-              Complete Quest
-            </button>
-          </div>
-          
-          <div class="card">
-            <h3>⛏️ Miner's Challenge</h3>
-            <p>Mine 20 ores of any type</p>
-            <p><strong>Reward:</strong> 300 XP + 150 coins</p>
-            <div class="text-muted">Progress: ${(this.currentUser.inventory.copper_ore || 0) + (this.currentUser.inventory.iron_ore || 0)} / 20</div>
-            <button class="btn btn-success" ${(this.currentUser.inventory.copper_ore || 0) + (this.currentUser.inventory.iron_ore || 0) < 20 ? 'disabled' : ''}>
-              Complete Quest
-            </button>
-          </div>
-          
-          <div class="card">
-            <h3>🍳 Chef's Order</h3>
-            <p>Cook 10 food items</p>
-            <p><strong>Reward:</strong> 400 XP + 75 coins</p>
-            <div class="text-muted">Progress: ${(this.currentUser.inventory.cooked_shrimp || 0) + (this.currentUser.inventory.bread || 0)} / 10</div>
-            <button class="btn btn-success" ${(this.currentUser.inventory.cooked_shrimp || 0) + (this.currentUser.inventory.bread || 0) < 10 ? 'disabled' : ''}>
-              Complete Quest
-            </button>
-          </div>
-          
-          <div class="card">
-            <h3>⚔️ Warrior's Trial</h3>
-            <p>Defeat 5 monsters</p>
-            <p><strong>Reward:</strong> 750 XP + 200 coins</p>
-            <div class="text-muted">Progress: 0 / 5</div>
-            <button class="btn btn-success" disabled>
-              Complete Quest
-            </button>
+        <!-- Quest Tabs -->
+        <div class="quest-tabs">
+          <button class="btn btn-primary" onclick="game.showQuestTab('daily')" id="quest-tab-daily">
+            🌅 Daily Quests
+          </button>
+          <button class="btn btn-secondary" onclick="game.showQuestTab('weekly')" id="quest-tab-weekly">
+            📅 Weekly Quests
+          </button>
+          <button class="btn btn-secondary" onclick="game.showQuestTab('story')" id="quest-tab-story">
+            📖 Story Quests
+          </button>
+        </div>
+        
+        <!-- Quest Content -->
+        <div class="dashboard-card">
+          <div id="quest-content">
+            ${this.renderDailyQuests()}
           </div>
         </div>
       </div>
     `;
+    } catch (error) {
+      console.error('Error in renderQuests:', error);
+      return `
+        <div class="dashboard-card">
+          <div class="card-header">
+            <h2 class="card-title">📜 Quest System</h2>
+            <div class="text-muted">Error loading quests</div>
+          </div>
+          <div class="card-body">
+            <p>There was an error loading the quest system. Please try refreshing the page.</p>
+            <p>Error: ${error.message}</p>
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  renderDailyQuests() {
+    const dailyQuests = this.getDailyQuests();
+    
+    return `
+      <div class="card">
+        <div class="card-header">
+          <h3>🌅 Daily Quests</h3>
+          <div class="text-muted">Reset every 24 hours</div>
+        </div>
+        
+        <div class="grid grid-3">
+          ${dailyQuests.map(quest => this.renderQuestCard(quest)).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  renderWeeklyQuests() {
+    const weeklyQuests = this.getWeeklyQuests();
+    
+    return `
+      <div class="card">
+        <div class="card-header">
+          <h3>📅 Weekly Quests</h3>
+          <div class="text-muted">Reset every 7 days</div>
+        </div>
+        
+        <div class="grid grid-3">
+          ${weeklyQuests.map(quest => this.renderQuestCard(quest)).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  renderStoryQuests() {
+    const storyQuests = this.getStoryQuests();
+    
+    return `
+      <div class="card">
+        <div class="card-header">
+          <h3>📖 Story Quests</h3>
+          <div class="text-muted">Main storyline progression</div>
+        </div>
+        
+        <div class="grid grid-1">
+          ${storyQuests.map(quest => this.renderQuestCard(quest)).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  renderAchievements() {
+    const achievements = this.getAchievements();
+    
+    return `
+      <div class="card">
+        <div class="card-header">
+          <h3>🏆 Achievements</h3>
+          <div class="text-muted">Permanent milestones and rewards</div>
+        </div>
+        
+        <div class="grid grid-3">
+          ${achievements.map(achievement => this.renderAchievementCard(achievement)).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  getDailyQuests() {
+    try {
+      return [
+        {
+          id: 'daily_woodcutting',
+          name: '🪓 Lumberjack\'s Request',
+          description: 'Cut 25 logs of any type',
+          type: 'gathering',
+          objective: { skill: 'woodcutting', amount: 25 },
+          reward: { xp: 500, coins: 100 },
+          resetDaily: true
+        },
+        {
+          id: 'daily_mining',
+          name: '⛏️ Miner\'s Challenge',
+          description: 'Mine 20 ores of any type',
+          type: 'gathering',
+          objective: { skill: 'mining', amount: 20 },
+          reward: { xp: 300, coins: 150 },
+          resetDaily: true
+        },
+        {
+          id: 'daily_cooking',
+          name: '🍳 Chef\'s Order',
+          description: 'Cook 10 food items',
+          type: 'production',
+          objective: { skill: 'cooking', amount: 10 },
+          reward: { xp: 400, coins: 75 },
+          resetDaily: true
+        },
+        {
+          id: 'daily_combat',
+          name: '⚔️ Warrior\'s Trial',
+          description: 'Defeat 5 monsters',
+          type: 'combat',
+          objective: { skill: 'combat', amount: 5 },
+          reward: { xp: 750, coins: 200 },
+          resetDaily: true
+        },
+        {
+          id: 'daily_fishing',
+          name: '🎣 Angler\'s Quest',
+          description: 'Catch 15 fish of any type',
+          type: 'gathering',
+          objective: { skill: 'fishing', amount: 15 },
+          reward: { xp: 350, coins: 120 },
+          resetDaily: true
+        },
+        {
+          id: 'daily_smithing',
+          name: '🔨 Blacksmith\'s Task',
+          description: 'Smith 8 metal items',
+          type: 'production',
+          objective: { skill: 'smithing', amount: 8 },
+          reward: { xp: 600, coins: 180 },
+          resetDaily: true
+        }
+      ];
+    } catch (error) {
+      console.error('Error in getDailyQuests:', error);
+      return [];
+    }
+  }
+
+  getWeeklyQuests() {
+    return [
+      {
+        id: 'weekly_mastery',
+        name: '🎯 Skill Mastery',
+        description: 'Reach level 10 in any skill',
+        type: 'progression',
+        objective: { skill: 'any', level: 10 },
+        reward: { xp: 2000, coins: 500, items: ['iron_sword'] },
+        resetWeekly: true
+      },
+      {
+        id: 'weekly_wealth',
+        name: '💰 Wealth Accumulator',
+        description: 'Earn 1000 coins',
+        type: 'economy',
+        objective: { type: 'coins', amount: 1000 },
+        reward: { xp: 1000, coins: 200, items: ['gold_ring'] },
+        resetWeekly: true
+      },
+      {
+        id: 'weekly_explorer',
+        name: '🗺️ Explorer',
+        description: 'Complete 10 different activities',
+        type: 'variety',
+        objective: { type: 'activities', amount: 10 },
+        reward: { xp: 1500, coins: 300, items: ['cape'] },
+        resetWeekly: true
+      },
+      {
+        id: 'weekly_combat_master',
+        name: '⚔️ Combat Master',
+        description: 'Defeat 50 monsters',
+        type: 'combat',
+        objective: { skill: 'combat', amount: 50 },
+        reward: { xp: 3000, coins: 800, items: ['steel_sword'] },
+        resetWeekly: true
+      },
+      {
+        id: 'weekly_crafter',
+        name: '🔨 Master Crafter',
+        description: 'Create 25 items',
+        type: 'production',
+        objective: { type: 'crafting', amount: 25 },
+        reward: { xp: 2500, coins: 600, items: ['steel_helmet'] },
+        resetWeekly: true
+      },
+      {
+        id: 'weekly_gatherer',
+        name: '🌿 Resource Gatherer',
+        description: 'Gather 100 resources',
+        type: 'gathering',
+        objective: { type: 'gathering', amount: 100 },
+        reward: { xp: 1800, coins: 400, items: ['iron_pickaxe'] },
+        resetWeekly: true
+      },
+      {
+        id: 'weekly_achiever',
+        name: '🏆 Achievement Hunter',
+        description: 'Complete 5 achievements',
+        type: 'milestone',
+        objective: { type: 'achievements', amount: 5 },
+        reward: { xp: 4000, coins: 1000, items: ['sapphire_ring'] },
+        resetWeekly: true
+      }
+    ];
+  }
+
+  getStoryQuests() {
+    return [
+      {
+        id: 'story_beginner',
+        name: '🌱 The Beginning',
+        description: 'Complete your first gathering activity',
+        type: 'story',
+        objective: { type: 'first_activity', amount: 1 },
+        reward: { xp: 100, coins: 50, items: ['bronze_pickaxe'] },
+        prerequisite: null
+      },
+      {
+        id: 'story_warrior',
+        name: '⚔️ Path of the Warrior',
+        description: 'Defeat your first monster',
+        type: 'story',
+        objective: { type: 'first_combat', amount: 1 },
+        reward: { xp: 200, coins: 100, items: ['bronze_sword'] },
+        prerequisite: 'story_beginner'
+      },
+      {
+        id: 'story_crafter',
+        name: '🔨 The Art of Crafting',
+        description: 'Create your first item',
+        type: 'story',
+        objective: { type: 'first_craft', amount: 1 },
+        reward: { xp: 300, coins: 150, items: ['bronze_helmet'] },
+        prerequisite: 'story_warrior'
+      }
+    ];
+  }
+
+  getAchievements() {
+    return [
+      {
+        id: 'ach_first_steps',
+        name: '👶 First Steps',
+        description: 'Complete your first quest',
+        type: 'milestone',
+        objective: { type: 'quests_completed', amount: 1 },
+        reward: { xp: 500, coins: 100, items: ['bronze_axe'] }
+      },
+      {
+        id: 'ach_skill_master',
+        name: '🎓 Skill Master',
+        description: 'Reach level 25 in any skill',
+        type: 'progression',
+        objective: { type: 'skill_level', amount: 25 },
+        reward: { xp: 5000, coins: 1000, items: ['steel_sword'] }
+      },
+      {
+        id: 'ach_wealthy',
+        name: '💎 Wealthy',
+        description: 'Accumulate 10,000 coins',
+        type: 'economy',
+        objective: { type: 'total_coins', amount: 10000 },
+        reward: { xp: 2000, coins: 500, items: ['sapphire_ring'] }
+      },
+      {
+        id: 'ach_explorer',
+        name: '🗺️ Explorer',
+        description: 'Complete 50 different activities',
+        type: 'variety',
+        objective: { type: 'activities_completed', amount: 50 },
+        reward: { xp: 3000, coins: 750, items: ['magic_cape'] }
+      }
+    ];
+  }
+
+  renderQuestCard(quest) {
+    const progress = this.getQuestProgress(quest.id);
+    const completed = this.isQuestCompleted(quest.id);
+    const accepted = this.isQuestAccepted(quest.id);
+    const progressPercent = (progress.current / progress.required) * 100;
+    const canComplete = progress.current >= progress.required && !completed;
+    
+    return `
+      <div class="card quest-card ${completed ? 'quest-completed' : ''} ${accepted ? 'quest-accepted' : ''}">
+        <div class="quest-header">
+          <h3>${quest.name} ${accepted ? '✓' : ''}</h3>
+          <div class="quest-type">${this.getQuestTypeIcon(quest.type)}</div>
+        </div>
+        
+        <p class="quest-description">${quest.description}</p>
+        
+        <div class="quest-progress">
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: ${Math.min(progressPercent, 100)}%"></div>
+          </div>
+          <div class="progress-text">${progress.current} / ${progress.required}</div>
+        </div>
+        
+        <div class="quest-reward">
+          <strong>Reward:</strong>
+          ${quest.reward.xp ? `<span class="reward-xp">+${quest.reward.xp} XP</span>` : ''}
+          ${quest.reward.coins ? `<span class="reward-coins">+${this.formatCoins(quest.reward.coins)}</span>` : ''}
+          ${quest.reward.items ? quest.reward.items.map(item => `<span class="reward-item">${this.getItemIcon(item)} ${this.gameData.items[item]?.name}</span>`).join('') : ''}
+        </div>
+        
+        <div class="quest-actions">
+          ${canComplete ? `
+            <button class="btn btn-success" onclick="game.completeQuest('${quest.id}')">
+              Complete Quest
+            </button>
+          ` : completed ? `
+            <button class="btn btn-secondary" disabled>
+              ✓ Completed
+            </button>
+          ` : accepted ? `
+            <button class="btn btn-info" disabled>
+              ✓ Accepted - In Progress
+            </button>
+          ` : `
+            <button class="btn btn-primary" onclick="game.acceptQuest('${quest.id}')">
+              Accept Quest
+            </button>
+          `}
+        </div>
+      </div>
+    `;
+  }
+
+  renderAchievementCard(achievement) {
+    const progress = this.getQuestProgress(achievement.id);
+    const completed = this.isQuestCompleted(achievement.id);
+    const progressPercent = (progress.current / progress.required) * 100;
+    const canComplete = progress.current >= progress.required && !completed;
+    
+    return `
+      <div class="card achievement-card ${completed ? 'achievement-completed' : ''}">
+        <div class="achievement-header">
+          <h3>${achievement.name}</h3>
+          <div class="achievement-type">🏆</div>
+        </div>
+        
+        <p class="achievement-description">${achievement.description}</p>
+        
+        <div class="achievement-progress">
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: ${Math.min(progressPercent, 100)}%"></div>
+          </div>
+          <div class="progress-text">${progress.current} / ${progress.required}</div>
+        </div>
+        
+        <div class="achievement-reward">
+          <strong>Reward:</strong>
+          ${achievement.reward.xp ? `<span class="reward-xp">+${achievement.reward.xp} XP</span>` : ''}
+          ${achievement.reward.coins ? `<span class="reward-coins">+${this.formatCoins(achievement.reward.coins)}</span>` : ''}
+          ${achievement.reward.items ? achievement.reward.items.map(item => `<span class="reward-item">${this.getItemIcon(item)} ${this.gameData.items[item]?.name}</span>`).join('') : ''}
+        </div>
+        
+        <div class="achievement-actions">
+          ${canComplete ? `
+            <button class="btn btn-success" onclick="game.completeQuest('${achievement.id}')">
+              Claim Reward
+            </button>
+          ` : completed ? `
+            <button class="btn btn-secondary" disabled>
+              ✓ Claimed
+            </button>
+          ` : `
+            <button class="btn btn-primary" disabled>
+              In Progress
+            </button>
+          `}
+        </div>
+      </div>
+    `;
+  }
+
+  getQuestTypeIcon(type) {
+    const icons = {
+      'gathering': '🪓',
+      'production': '🔨',
+      'combat': '⚔️',
+      'progression': '📈',
+      'economy': '💰',
+      'variety': '🎯',
+      'story': '📖',
+      'milestone': '🏆'
+    };
+    return icons[type] || '📜';
+  }
+
+  getQuestProgress(questId) {
+    if (!this.currentUser.questProgress) {
+      this.currentUser.questProgress = {};
+    }
+    
+    const quest = this.getQuestById(questId);
+    if (!quest) {
+      return { current: 0, required: 1 };
+    }
+    
+    let current = 0;
+    const required = quest.objective.amount;
+    
+    switch(quest.objective.type) {
+      case 'skill':
+        if (quest.objective.skill === 'any') {
+          // Find highest skill level
+          current = Math.max(...Object.values(this.currentUser.skills).map(skill => skill.level));
+        } else {
+          current = this.currentUser.skills[quest.objective.skill]?.level || 0;
+        }
+        break;
+      case 'coins':
+        current = this.currentUser.inventory.coins || 0;
+        break;
+      case 'activities':
+        current = this.currentUser.questProgress.activitiesCompleted || 0;
+        break;
+      case 'first_activity':
+        current = this.currentUser.questProgress.firstActivityCompleted ? 1 : 0;
+        break;
+      case 'first_combat':
+        current = this.currentUser.questProgress.firstCombatCompleted ? 1 : 0;
+        break;
+      case 'first_craft':
+        current = this.currentUser.questProgress.firstCraftCompleted ? 1 : 0;
+        break;
+      case 'quests_completed':
+        current = this.currentUser.questProgress.questsCompleted || 0;
+        break;
+      case 'skill_level':
+        if (quest.objective.skill === 'any') {
+          current = Math.max(...Object.values(this.currentUser.skills).map(skill => skill.level));
+        } else {
+          current = this.currentUser.skills[quest.objective.skill]?.level || 0;
+        }
+        break;
+      case 'total_coins':
+        current = this.currentUser.questProgress.totalCoinsEarned || 0;
+        break;
+      case 'activities_completed':
+        current = this.currentUser.questProgress.activitiesCompleted || 0;
+        break;
+      default:
+        // For skill-based objectives
+        if (quest.objective.skill) {
+          current = this.getSkillProgress(quest.objective.skill, quest.objective.amount);
+        }
+        break;
+    }
+    
+    return { current: Math.min(current, required), required };
+  }
+
+  getSkillProgress(skill, amount) {
+    if (skill === 'woodcutting') {
+      return (this.currentUser.inventory.logs || 0) + (this.currentUser.inventory.oak_logs || 0);
+    } else if (skill === 'mining') {
+      return (this.currentUser.inventory.copper_ore || 0) + (this.currentUser.inventory.iron_ore || 0);
+    } else if (skill === 'cooking') {
+      return (this.currentUser.inventory.cooked_shrimp || 0) + (this.currentUser.inventory.bread || 0);
+    } else if (skill === 'combat') {
+      return this.currentUser.questProgress.monstersDefeated || 0;
+    }
+    return 0;
+  }
+
+  getQuestById(questId) {
+    try {
+      const allQuests = [
+        ...this.getDailyQuests(),
+        ...this.getWeeklyQuests(),
+        ...this.getStoryQuests(),
+        ...this.getAchievements()
+      ];
+      return allQuests.find(quest => quest.id === questId);
+    } catch (error) {
+      console.error('Error in getQuestById:', error);
+      return null;
+    }
+  }
+
+  isQuestCompleted(questId) {
+    if (!this.currentUser.questProgress) {
+      this.currentUser.questProgress = {};
+    }
+    return this.currentUser.questProgress[questId]?.completed || false;
+  }
+
+  isQuestAccepted(questId) {
+    if (!this.currentUser.questProgress) {
+      this.currentUser.questProgress = {};
+    }
+    return this.currentUser.questProgress[questId]?.accepted || false;
+  }
+
+  updateQuestProgress(questId, progress) {
+    if (!this.currentUser.questProgress) {
+      this.currentUser.questProgress = {};
+    }
+    if (!this.currentUser.questProgress[questId]) {
+      this.currentUser.questProgress[questId] = { completed: false, progress: 0 };
+    }
+    this.currentUser.questProgress[questId].progress = progress;
+  }
+
+  markQuestCompleted(questId) {
+    if (!this.currentUser.questProgress) {
+      this.currentUser.questProgress = {};
+    }
+    if (!this.currentUser.questProgress[questId]) {
+      this.currentUser.questProgress[questId] = { completed: false, progress: 0 };
+    }
+    this.currentUser.questProgress[questId].completed = true;
+  }
+
+  showQuestTab(tab) {
+    // Update tab buttons
+    document.querySelectorAll('[id^="quest-tab-"]').forEach(btn => {
+      btn.className = 'btn btn-secondary';
+    });
+    document.getElementById(`quest-tab-${tab}`).className = 'btn btn-primary';
+    
+    // Update content
+    const content = document.getElementById('quest-content');
+    switch(tab) {
+      case 'daily':
+        content.innerHTML = this.renderDailyQuests();
+        break;
+      case 'weekly':
+        content.innerHTML = this.renderWeeklyQuests();
+        break;
+      case 'story':
+        content.innerHTML = this.renderStoryQuests();
+        break;
+    }
+  }
+
+  acceptQuest(questId) {
+    if (!this.currentUser.questProgress) {
+      this.currentUser.questProgress = {};
+    }
+    
+    const quest = this.getQuestById(questId);
+    if (!quest) {
+      this.showNotification('Quest not found!');
+      return;
+    }
+    
+    // Check prerequisites
+    if (quest.prerequisite && !this.isQuestCompleted(quest.prerequisite)) {
+      this.showNotification('Complete prerequisite quest first!');
+      return;
+    }
+    
+    // Accept the quest
+    this.currentUser.questProgress[questId] = {
+      accepted: true,
+      completed: false,
+      progress: 0,
+      acceptedAt: new Date().toISOString()
+    };
+    
+    this.saveUserData();
+    this.render();
+    this.showNotification(`Quest "${quest.name}" accepted!`);
+  }
+
+  completeQuest(questId) {
+    if (!this.currentUser.questProgress) {
+      this.currentUser.questProgress = {};
+    }
+    
+    const quest = this.getQuestById(questId);
+    if (!quest) {
+      this.showNotification('Quest not found!');
+      return;
+    }
+    
+    const progress = this.getQuestProgress(questId);
+    if (progress.current < progress.required) {
+      this.showNotification('Quest not yet complete!');
+      return;
+    }
+    
+    if (this.isQuestCompleted(questId)) {
+      this.showNotification('Quest already completed!');
+      return;
+    }
+    
+    // Mark quest as completed
+    this.markQuestCompleted(questId);
+    
+    // Give rewards
+    let rewardText = 'Quest completed! Rewards: ';
+    const rewards = [];
+    
+    if (quest.reward.xp) {
+      // Add XP to appropriate skill
+      if (quest.objective.skill && quest.objective.skill !== 'any') {
+        this.addXP(quest.objective.skill, quest.reward.xp);
+        rewards.push(`+${quest.reward.xp} ${quest.objective.skill} XP`);
+      } else {
+        // Add XP to all skills or highest skill
+        const skills = Object.keys(this.currentUser.skills);
+        skills.forEach(skill => {
+          this.addXP(skill, Math.floor(quest.reward.xp / skills.length));
+        });
+        rewards.push(`+${quest.reward.xp} XP (all skills)`);
+      }
+    }
+    
+    if (quest.reward.coins) {
+      this.addCoins(quest.reward.coins);
+      rewards.push(`+${this.formatCoins(quest.reward.coins)}`);
+    }
+    
+    if (quest.reward.items) {
+      quest.reward.items.forEach(itemId => {
+        this.currentUser.inventory[itemId] = (this.currentUser.inventory[itemId] || 0) + 1;
+        rewards.push(`${this.getItemIcon(itemId)} ${this.gameData.items[itemId]?.name}`);
+      });
+    }
+    
+    // Update quest progress counters
+    this.currentUser.questProgress.questsCompleted = (this.currentUser.questProgress.questsCompleted || 0) + 1;
+    
+    this.saveUserData();
+    this.render();
+    this.showNotification(`Quest completed! ${rewards.join(', ')}`);
+  }
+
+  addXP(skillId, amount) {
+    if (!this.currentUser.skills[skillId]) {
+      this.currentUser.skills[skillId] = { level: 1, xp: 0 };
+    }
+    
+    // Add XP with house bonuses
+    const houseBonuses = this.getHouseBonuses();
+    let bonusXP = 0;
+    houseBonuses.forEach(bonus => {
+      if (bonus.type === 'all' || bonus.type === skillId) {
+        bonusXP += bonus.xp || 0;
+      }
+    });
+    
+    this.currentUser.skills[skillId].xp += amount + bonusXP;
+    
+    // Check for level up
+    const newLevel = this.calculateLevel(this.currentUser.skills[skillId].xp);
+    console.log(`XP added to ${skillId}: ${amount}, new level: ${newLevel}, current level: ${this.currentUser.skills[skillId].level}`);
+    if (newLevel > this.currentUser.skills[skillId].level) {
+      console.log(`Level up detected! ${skillId} from ${this.currentUser.skills[skillId].level} to ${newLevel}`);
+      this.currentUser.skills[skillId].level = newLevel;
+      this.showLevelUpEffect(skillId, newLevel);
+    }
+    
+    this.saveUserData();
+  }
+
+  calculateLevel(xp) {
+    // OSRS-style level calculation: level = sqrt(xp / 100) + 1
+    return Math.floor(Math.sqrt(xp / 100)) + 1;
+  }
+
+  trackQuestProgress(skill, amount) {
+    if (!this.currentUser.questProgress) {
+      this.currentUser.questProgress = {};
+    }
+    
+    // Track first activity completion
+    if (!this.currentUser.questProgress.firstActivityCompleted) {
+      this.currentUser.questProgress.firstActivityCompleted = true;
+    }
+    
+    // Track activities completed
+    this.currentUser.questProgress.activitiesCompleted = (this.currentUser.questProgress.activitiesCompleted || 0) + 1;
+    
+    // Track skill-specific progress
+    if (skill === 'combat') {
+      this.currentUser.questProgress.monstersDefeated = (this.currentUser.questProgress.monstersDefeated || 0) + amount;
+      if (!this.currentUser.questProgress.firstCombatCompleted) {
+        this.currentUser.questProgress.firstCombatCompleted = true;
+      }
+    }
+    
+    // Track total coins earned
+    if (skill === 'woodcutting' || skill === 'mining' || skill === 'fishing') {
+      // These skills generate items that can be sold
+      this.currentUser.questProgress.totalCoinsEarned = (this.currentUser.questProgress.totalCoinsEarned || 0) + (amount * 5); // Estimate
+    }
   }
 
   renderGuild() {
+    const guildData = this.getGuildData();
+    const currentCoins = this.currentUser.inventory.coins || 0;
+    
     return `
-      <div class="card">
-        <div class="card-header">
-          <h2 class="card-title">🏛️ Guild System</h2>
-          <div class="text-muted">Join a guild and play with others</div>
+      <div class="guild-container">
+        <!-- Header -->
+        <div class="dashboard-card">
+          <div class="card-header">
+            <h2 class="card-title">🏛️ Guild System</h2>
+            <div class="text-muted">Join a guild and play with others</div>
+            <div class="coins-display">
+              <span class="coins-icon">🪙</span>
+              <span class="coins-amount">${this.formatCoins(currentCoins)}</span>
+            </div>
+          </div>
         </div>
         
-        <div class="text-center" style="padding: 2rem;">
-          <h3>Guild Features</h3>
-          <p class="text-muted">Guild system will be available when multiplayer features are implemented.</p>
-          
-          <div style="margin: 2rem 0;">
-            <h4>Planned Features:</h4>
-            <ul style="text-align: left; max-width: 400px; margin: 0 auto;">
-              <li>Create or join guilds</li>
-              <li>Guild chat and messaging</li>
-              <li>Guild competitions and events</li>
-              <li>Shared guild achievements</li>
-              <li>Guild halls and upgrades</li>
-            </ul>
+        <!-- Guild Status -->
+        <div class="dashboard-card">
+          <div class="guild-stats-grid">
+            <div class="guild-stat">
+              <div class="stat-icon">🏛️</div>
+              <div class="stat-info">
+                <div class="stat-label">Guild</div>
+                <div class="stat-value">${guildData.name || 'None'}</div>
+              </div>
+            </div>
+            <div class="guild-stat">
+              <div class="stat-icon">👥</div>
+              <div class="stat-info">
+                <div class="stat-label">Members</div>
+                <div class="stat-value">${guildData.memberCount || 0}</div>
+              </div>
+            </div>
+            <div class="guild-stat">
+              <div class="stat-icon">⭐</div>
+              <div class="stat-info">
+                <div class="stat-label">Level</div>
+                <div class="stat-value">${guildData.level || 1}</div>
+              </div>
+            </div>
           </div>
-          
-          <button class="btn btn-secondary" onclick="game.navigateTo('leaderboard')">
-            View Leaderboards Instead
+        </div>
+        
+        <!-- Guild Tabs -->
+        <div class="guild-tabs">
+          <button class="btn btn-primary" onclick="game.showGuildTab('overview')" id="guild-tab-overview">
+            🏛️ Overview
           </button>
+          <button class="btn btn-secondary" onclick="game.showGuildTab('members')" id="guild-tab-members">
+            👥 Members
+          </button>
+          <button class="btn btn-secondary" onclick="game.showGuildTab('chat')" id="guild-tab-chat">
+            💬 Chat
+          </button>
+          <button class="btn btn-secondary" onclick="game.showGuildTab('events')" id="guild-tab-events">
+            🎯 Events
+          </button>
+          <button class="btn btn-secondary" onclick="game.showGuildTab('hall')" id="guild-tab-hall">
+            🏰 Guild Hall
+          </button>
+          <button class="btn btn-secondary" onclick="game.showGuildTab('browse')" id="guild-tab-browse">
+            🔍 Browse
+          </button>
+        </div>
+        
+        <!-- Guild Content -->
+        <div class="dashboard-card">
+          <div id="guild-content">
+            ${this.renderGuildOverview()}
+          </div>
         </div>
       </div>
     `;
   }
 
-  renderHouse() {
+  renderGuildOverview() {
+    const guildData = this.getGuildData();
+    
+    if (!guildData.name) {
+      return this.renderNoGuild();
+    }
+    
     return `
       <div class="card">
         <div class="card-header">
-          <h2 class="card-title">🏠 Player House</h2>
-          <div class="text-muted">Customize your personal space</div>
+          <h3>🏛️ ${guildData.name}</h3>
+          <div class="text-muted">Level ${guildData.level} • ${guildData.memberCount} members</div>
+        </div>
+        
+        <div class="grid grid-2">
+          <div class="guild-info">
+            <h4>📋 Guild Info</h4>
+            <p><strong>Description:</strong> ${guildData.description || 'No description set'}</p>
+            <p><strong>Founded:</strong> ${new Date(guildData.foundedAt).toLocaleDateString()}</p>
+            <p><strong>Guild Master:</strong> ${guildData.guildMaster}</p>
+            <p><strong>Your Rank:</strong> ${guildData.memberRank}</p>
+          </div>
+          
+          <div class="guild-stats">
+            <h4>📊 Guild Statistics</h4>
+            <div class="stat-row">
+              <span>Total XP:</span>
+              <span>${guildData.totalXP?.toLocaleString() || 0}</span>
+            </div>
+            <div class="stat-row">
+              <span>Guild Coins:</span>
+              <span>${this.formatCoins(guildData.guildCoins || 0)}</span>
+            </div>
+            <div class="stat-row">
+              <span>Events Won:</span>
+              <span>${guildData.eventsWon || 0}</span>
+            </div>
+            <div class="stat-row">
+              <span>Hall Level:</span>
+              <span>${guildData.hallLevel || 1}</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="guild-actions" style="margin-top: 1rem;">
+          ${guildData.memberRank === 'Guild Master' ? `
+            <button class="btn btn-primary" onclick="game.showGuildManagement()">Manage Guild</button>
+          ` : `
+            <button class="btn btn-secondary" onclick="game.leaveGuild()">Leave Guild</button>
+          `}
+        </div>
+      </div>
+    `;
+  }
+
+  renderNoGuild() {
+    return `
+      <div class="card">
+        <div class="card-header">
+          <h3>🏛️ No Guild</h3>
+          <div class="text-muted">Join or create a guild to get started</div>
         </div>
         
         <div class="grid grid-2">
           <div class="card">
-            <h3>🏠 House Status</h3>
-            <p><strong>House Level:</strong> 1</p>
-            <p><strong>Rooms:</strong> 3</p>
-            <p><strong>Decorations:</strong> 0</p>
-            <p><strong>Visitors Today:</strong> 0</p>
+            <h4>🔍 Browse Guilds</h4>
+            <p>Find existing guilds to join</p>
+            <button class="btn btn-primary" onclick="game.showGuildTab('browse')">
+              Browse Guilds
+            </button>
           </div>
           
           <div class="card">
-            <h3>🔨 Upgrades Available</h3>
-            <div style="margin-bottom: 1rem;">
-              <div>Kitchen Upgrade</div>
-              <div class="text-muted">Cost: 1000 coins + 50 logs</div>
-              <button class="btn btn-primary" disabled>Upgrade</button>
+            <h4>➕ Create Guild</h4>
+            <p>Start your own guild</p>
+            <button class="btn btn-primary" onclick="game.showCreateGuild()">
+              Create Guild
+            </button>
+          </div>
+        </div>
+        
+        <div class="card" style="margin-top: 1rem;">
+          <h4>🎯 Guild Benefits</h4>
+          <div class="grid grid-2">
+            <ul>
+              <li>Guild chat and messaging</li>
+              <li>Shared guild achievements</li>
+              <li>Guild events and competitions</li>
+            </ul>
+            <ul>
+              <li>Guild hall upgrades</li>
+              <li>Guild-specific bonuses</li>
+              <li>Team-based progression</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  renderGuildMembers() {
+    const guildData = this.getGuildData();
+    
+    if (!guildData.name) {
+      return this.renderNoGuild();
+    }
+    
+    return `
+      <div class="card">
+        <div class="card-header">
+          <h3>👥 Guild Members</h3>
+          <div class="text-muted">${guildData.memberCount} members</div>
+        </div>
+        
+        <div class="guild-members">
+          ${guildData.members?.map(member => this.renderGuildMember(member)).join('') || ''}
+        </div>
+      </div>
+    `;
+  }
+
+  renderGuildChat() {
+    const guildData = this.getGuildData();
+    
+    if (!guildData.name) {
+      return this.renderNoGuild();
+    }
+    
+    return `
+      <div class="card">
+        <div class="card-header">
+          <h3>💬 Guild Chat</h3>
+          <div class="text-muted">Chat with your guild members</div>
+        </div>
+        
+        <div class="guild-chat-container">
+          <div class="guild-chat-messages" id="guild-chat-messages">
+            ${guildData.chatMessages?.map(msg => this.renderChatMessage(msg)).join('') || ''}
+          </div>
+          
+          <div class="guild-chat-input">
+            <input type="text" id="guild-chat-input" placeholder="Type a message..." maxlength="200">
+            <button class="btn btn-primary" onclick="game.sendGuildMessage()">Send</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  renderGuildEvents() {
+    const guildData = this.getGuildData();
+    
+    if (!guildData.name) {
+      return this.renderNoGuild();
+    }
+    
+    return `
+      <div class="card">
+        <div class="card-header">
+          <h3>🎯 Guild Events</h3>
+          <div class="text-muted">Participate in guild competitions</div>
+        </div>
+        
+        <div class="guild-events">
+          ${this.getGuildEvents().map(event => this.renderGuildEvent(event)).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  renderGuildHall() {
+    const guildData = this.getGuildData();
+    
+    if (!guildData.name) {
+      return this.renderNoGuild();
+    }
+    
+    return `
+      <div class="card">
+        <div class="card-header">
+          <h3>🏰 Guild Hall</h3>
+          <div class="text-muted">Upgrade your guild's hall for benefits</div>
+        </div>
+        
+        <div class="guild-hall-info">
+          <div class="hall-level">
+            <h4>Current Level: ${guildData.hallLevel || 1}</h4>
+            <div class="hall-progress">
+              <div class="progress-bar">
+                <div class="progress-fill" style="width: ${((guildData.hallXP || 0) / (guildData.hallLevel * 1000)) * 100}%"></div>
+              </div>
+              <span class="progress-text">${guildData.hallXP || 0} / ${(guildData.hallLevel || 1) * 1000} XP</span>
             </div>
-            <div style="margin-bottom: 1rem;">
-              <div>Garden Plot</div>
-              <div class="text-muted">Cost: 500 coins + 25 wheat</div>
-              <button class="btn btn-primary" disabled>Build</button>
+          </div>
+          
+          <div class="hall-upgrades">
+            ${this.getGuildHallUpgrades().map(upgrade => this.renderGuildHallUpgrade(upgrade)).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  renderGuildBrowse() {
+    return `
+      <div class="card">
+        <div class="card-header">
+          <h3>🔍 Browse Guilds</h3>
+          <div class="text-muted">Find a guild to join</div>
+        </div>
+        
+        <div class="guild-search">
+          <input type="text" id="guild-search-input" placeholder="Search guilds..." onkeyup="game.searchGuilds()">
+          <button class="btn btn-primary" onclick="game.searchGuilds()">Search</button>
+        </div>
+        
+        <div class="guild-list" id="guild-list">
+          ${this.getGuildList().map(guild => this.renderGuildListItem(guild)).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  getGuildData() {
+    if (!this.currentUser.guild) {
+      this.currentUser.guild = {
+        name: null,
+        level: 1,
+        memberCount: 0,
+        description: '',
+        foundedAt: null,
+        guildMaster: '',
+        memberRank: 'None',
+        totalXP: 0,
+        guildCoins: 0,
+        eventsWon: 0,
+        hallLevel: 1,
+        hallXP: 0,
+        members: [],
+        chatMessages: [],
+        upgrades: []
+      };
+    }
+    return this.currentUser.guild;
+  }
+
+  getGuildEvents() {
+    return [
+      {
+        id: 'weekly_competition',
+        name: 'Weekly Competition',
+        description: 'Compete with other guilds for rewards',
+        type: 'weekly',
+        status: 'active',
+        endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        rewards: { coins: 10000, xp: 5000 }
+      },
+      {
+        id: 'guild_raid',
+        name: 'Guild Raid',
+        description: 'Team up to defeat powerful bosses',
+        type: 'raid',
+        status: 'upcoming',
+        startTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+        rewards: { coins: 25000, xp: 10000 }
+      },
+      {
+        id: 'skill_challenge',
+        name: 'Skill Challenge',
+        description: 'Guild members compete in specific skills',
+        type: 'skill',
+        status: 'completed',
+        endTime: new Date(Date.now() - 24 * 60 * 60 * 1000),
+        rewards: { coins: 5000, xp: 2500 }
+      }
+    ];
+  }
+
+  getGuildHallUpgrades() {
+    return [
+      {
+        id: 'xp_boost',
+        name: 'XP Boost',
+        description: 'Increases XP gain for all guild members',
+        level: 1,
+        cost: { guildCoins: 1000, guildXP: 500 },
+        bonus: { xp: 5, type: 'all' }
+      },
+      {
+        id: 'efficiency_boost',
+        name: 'Efficiency Boost',
+        description: 'Increases efficiency for all guild members',
+        level: 2,
+        cost: { guildCoins: 2000, guildXP: 1000 },
+        bonus: { efficiency: 2, type: 'all' }
+      },
+      {
+        id: 'guild_storage',
+        name: 'Guild Storage',
+        description: 'Shared storage for guild members',
+        level: 3,
+        cost: { guildCoins: 5000, guildXP: 2500 },
+        bonus: { storage: 50, type: 'all' }
+      }
+    ];
+  }
+
+  getGuildList() {
+    // This will fetch from API when multiplayer is enabled
+    return [
+      {
+        id: 'dragons_lair',
+        name: 'Dragon\'s Lair',
+        description: 'Elite guild for experienced players',
+        level: 15,
+        memberCount: 45,
+        maxMembers: 50,
+        requirements: { minLevel: 50, minXP: 100000 },
+        guildMaster: 'DragonSlayer',
+        foundedAt: new Date('2025-01-01')
+      },
+      {
+        id: 'newbie_helpers',
+        name: 'Newbie Helpers',
+        description: 'Friendly guild for new players',
+        level: 8,
+        memberCount: 32,
+        maxMembers: 50,
+        requirements: { minLevel: 1, minXP: 0 },
+        guildMaster: 'HelperBot',
+        foundedAt: new Date('2025-02-15')
+      },
+      {
+        id: 'skill_masters',
+        name: 'Skill Masters',
+        description: 'Focus on skill development and training',
+        level: 12,
+        memberCount: 28,
+        maxMembers: 40,
+        requirements: { minLevel: 25, minXP: 50000 },
+        guildMaster: 'SkillMaster',
+        foundedAt: new Date('2025-03-01')
+      }
+    ];
+  }
+
+  renderGuildMember(member) {
+    return `
+      <div class="guild-member">
+        <div class="member-info">
+          <div class="member-name">${member.name}</div>
+          <div class="member-rank">${member.rank}</div>
+        </div>
+        <div class="member-stats">
+          <div class="member-level">Level ${member.level}</div>
+          <div class="member-xp">${member.xp?.toLocaleString() || 0} XP</div>
+        </div>
+        <div class="member-status">
+          <span class="status-indicator ${member.online ? 'online' : 'offline'}"></span>
+          ${member.online ? 'Online' : 'Offline'}
+        </div>
+      </div>
+    `;
+  }
+
+  renderChatMessage(message) {
+    return `
+      <div class="chat-message">
+        <div class="message-header">
+          <span class="message-author">${message.author}</span>
+          <span class="message-time">${new Date(message.timestamp).toLocaleTimeString()}</span>
+        </div>
+        <div class="message-content">${message.content}</div>
+      </div>
+    `;
+  }
+
+  renderGuildEvent(event) {
+    const statusClass = event.status === 'active' ? 'event-active' : 
+                       event.status === 'upcoming' ? 'event-upcoming' : 'event-completed';
+    
+    return `
+      <div class="guild-event ${statusClass}">
+        <div class="event-header">
+          <h4>${event.name}</h4>
+          <span class="event-status">${event.status}</span>
+        </div>
+        <p class="event-description">${event.description}</p>
+        <div class="event-rewards">
+          <strong>Rewards:</strong>
+          ${event.rewards.coins ? `<span class="reward-coins">+${this.formatCoins(event.rewards.coins)}</span>` : ''}
+          ${event.rewards.xp ? `<span class="reward-xp">+${event.rewards.xp} XP</span>` : ''}
+        </div>
+        <div class="event-actions">
+          ${event.status === 'active' ? `
+            <button class="btn btn-primary" onclick="game.joinGuildEvent('${event.id}')">Join Event</button>
+          ` : event.status === 'upcoming' ? `
+            <button class="btn btn-secondary" disabled>Starting Soon</button>
+          ` : `
+            <button class="btn btn-success" disabled>Completed</button>
+          `}
+        </div>
+      </div>
+    `;
+  }
+
+  renderGuildHallUpgrade(upgrade) {
+    const canUpgrade = this.canUpgradeGuildHall(upgrade);
+    
+    return `
+      <div class="guild-hall-upgrade">
+        <div class="upgrade-header">
+          <h4>${upgrade.name}</h4>
+          <span class="upgrade-level">Level ${upgrade.level}</span>
+        </div>
+        <p class="upgrade-description">${upgrade.description}</p>
+        <div class="upgrade-cost">
+          <strong>Cost:</strong>
+          ${this.formatCoins(upgrade.cost.guildCoins)} + ${upgrade.cost.guildXP} XP
+        </div>
+        <div class="upgrade-bonus">
+          <strong>Bonus:</strong>
+          ${upgrade.bonus.xp ? `+${upgrade.bonus.xp}% XP` : ''}
+          ${upgrade.bonus.efficiency ? `+${upgrade.bonus.efficiency}% Efficiency` : ''}
+          ${upgrade.bonus.storage ? `+${upgrade.bonus.storage} Storage` : ''}
+        </div>
+        <div class="upgrade-actions">
+          ${canUpgrade ? `
+            <button class="btn btn-primary" onclick="game.upgradeGuildHall('${upgrade.id}')">
+              Upgrade
+            </button>
+          ` : `
+            <button class="btn btn-secondary" disabled>Need Resources</button>
+          `}
+        </div>
+      </div>
+    `;
+  }
+
+  renderGuildListItem(guild) {
+    const canJoin = this.canJoinGuild(guild);
+    
+    return `
+      <div class="guild-list-item">
+        <div class="guild-info">
+          <h4>${guild.name}</h4>
+          <p class="guild-description">${guild.description}</p>
+          <div class="guild-stats">
+            <span>Level ${guild.level}</span>
+            <span>${guild.memberCount}/${guild.maxMembers} members</span>
+            <span>Founded: ${guild.foundedAt.toLocaleDateString()}</span>
+          </div>
+        </div>
+        <div class="guild-requirements">
+          <strong>Requirements:</strong>
+          <div>Min Level: ${guild.requirements.minLevel}</div>
+          <div>Min XP: ${guild.requirements.minXP.toLocaleString()}</div>
+        </div>
+        <div class="guild-actions">
+          ${canJoin ? `
+            <button class="btn btn-primary" onclick="game.joinGuild('${guild.id}')">
+              Join Guild
+            </button>
+          ` : `
+            <button class="btn btn-secondary" disabled>Requirements Not Met</button>
+          `}
+        </div>
+      </div>
+    `;
+  }
+
+  // Guild API Functions (Multiplayer Ready)
+  async fetchGuildList() {
+    try {
+      // This will be replaced with real API call when multiplayer is enabled
+      const response = await fetch('/api/guilds/list');
+      return await response.json();
+    } catch (error) {
+      console.log('Using local guild data (offline mode)');
+      return this.getGuildList();
+    }
+  }
+
+  async createGuild(guildData) {
+    try {
+      const response = await fetch('/api/guilds/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(guildData)
+      });
+      return await response.json();
+    } catch (error) {
+      console.log('Creating guild locally (offline mode)');
+      return this.createGuildLocally(guildData);
+    }
+  }
+
+  async joinGuild(guildId) {
+    try {
+      const response = await fetch('/api/guilds/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guildId })
+      });
+      return await response.json();
+    } catch (error) {
+      console.log('Joining guild locally (offline mode)');
+      return this.joinGuildLocally(guildId);
+    }
+  }
+
+  async leaveGuild() {
+    try {
+      const response = await fetch('/api/guilds/leave', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      return await response.json();
+    } catch (error) {
+      console.log('Leaving guild locally (offline mode)');
+      return this.leaveGuildLocally();
+    }
+  }
+
+  async sendGuildMessage(message) {
+    try {
+      const response = await fetch('/api/guilds/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message })
+      });
+      return await response.json();
+    } catch (error) {
+      console.log('Sending message locally (offline mode)');
+      return this.sendGuildMessageLocally(message);
+    }
+  }
+
+  // Local Guild Functions (Offline Mode)
+  createGuildLocally(guildData) {
+    const guild = {
+      name: guildData.name,
+      level: 1,
+      memberCount: 1,
+      description: guildData.description,
+      foundedAt: new Date().toISOString(),
+      guildMaster: this.currentUser.username,
+      memberRank: 'Guild Master',
+      totalXP: 0,
+      guildCoins: 0,
+      eventsWon: 0,
+      hallLevel: 1,
+      hallXP: 0,
+      members: [{
+        name: this.currentUser.username,
+        rank: 'Guild Master',
+        level: this.getTotalLevel(),
+        xp: this.getTotalXP(),
+        online: true
+      }],
+      chatMessages: [],
+      upgrades: []
+    };
+    
+    this.currentUser.guild = guild;
+    this.saveUserData();
+    this.render();
+    this.showNotification(`Guild "${guildData.name}" created successfully!`);
+  }
+
+  joinGuildLocally(guildId) {
+    const guild = this.getGuildList().find(g => g.id === guildId);
+    if (!guild) {
+      this.showNotification('Guild not found!');
+      return;
+    }
+    
+    if (!this.canJoinGuild(guild)) {
+      this.showNotification('You do not meet the requirements to join this guild!');
+      return;
+    }
+    
+    const member = {
+      name: this.currentUser.username,
+      rank: 'Member',
+      level: this.getTotalLevel(),
+      xp: this.getTotalXP(),
+      online: true
+    };
+    
+    guild.members.push(member);
+    guild.memberCount++;
+    
+    this.currentUser.guild = guild;
+    this.saveUserData();
+    this.render();
+    this.showNotification(`Joined guild "${guild.name}"!`);
+  }
+
+  leaveGuildLocally() {
+    if (!this.currentUser.guild.name) {
+      this.showNotification('You are not in a guild!');
+      return;
+    }
+    
+    this.currentUser.guild = {
+      name: null,
+      level: 1,
+      memberCount: 0,
+      description: '',
+      foundedAt: null,
+      guildMaster: '',
+      memberRank: 'None',
+      totalXP: 0,
+      guildCoins: 0,
+      eventsWon: 0,
+      hallLevel: 1,
+      hallXP: 0,
+      members: [],
+      chatMessages: [],
+      upgrades: []
+    };
+    
+    this.saveUserData();
+    this.render();
+    this.showNotification('Left guild successfully!');
+  }
+
+  sendGuildMessageLocally(message) {
+    if (!this.currentUser.guild.name) {
+      this.showNotification('You are not in a guild!');
+      return;
+    }
+    
+    const chatMessage = {
+      author: this.currentUser.username,
+      content: message,
+      timestamp: new Date().toISOString()
+    };
+    
+    this.currentUser.guild.chatMessages.push(chatMessage);
+    this.saveUserData();
+    this.render();
+  }
+
+  // Guild Helper Functions
+  canJoinGuild(guild) {
+    const totalLevel = this.getTotalLevel();
+    const totalXP = this.getTotalXP();
+    
+    return totalLevel >= guild.requirements.minLevel && 
+           totalXP >= guild.requirements.minXP &&
+           guild.memberCount < guild.maxMembers;
+  }
+
+  canUpgradeGuildHall(upgrade) {
+    const guildData = this.getGuildData();
+    return guildData.guildCoins >= upgrade.cost.guildCoins && 
+           guildData.hallXP >= upgrade.cost.guildXP;
+  }
+
+  getTotalLevel() {
+    return Object.values(this.currentUser.skills).reduce((sum, skill) => sum + skill.level, 0);
+  }
+
+  getTotalXP() {
+    return Object.values(this.currentUser.skills).reduce((sum, skill) => sum + skill.xp, 0);
+  }
+
+  // Guild UI Functions
+  showGuildTab(tab) {
+    // Update tab buttons
+    document.querySelectorAll('[id^="guild-tab-"]').forEach(btn => {
+      btn.className = 'btn btn-secondary';
+    });
+    document.getElementById(`guild-tab-${tab}`).className = 'btn btn-primary';
+    
+    // Update content
+    const content = document.getElementById('guild-content');
+    switch(tab) {
+      case 'overview':
+        content.innerHTML = this.renderGuildOverview();
+        break;
+      case 'members':
+        content.innerHTML = this.renderGuildMembers();
+        break;
+      case 'chat':
+        content.innerHTML = this.renderGuildChat();
+        break;
+      case 'events':
+        content.innerHTML = this.renderGuildEvents();
+        break;
+      case 'hall':
+        content.innerHTML = this.renderGuildHall();
+        break;
+      case 'browse':
+        content.innerHTML = this.renderGuildBrowse();
+        break;
+    }
+  }
+
+  showCreateGuild() {
+    const name = prompt('Enter guild name:');
+    if (!name) return;
+    
+    const description = prompt('Enter guild description:');
+    if (!description) return;
+    
+    this.createGuild({ name, description });
+  }
+
+  showGuildManagement() {
+    this.showNotification('Guild management coming soon!');
+  }
+
+  searchGuilds() {
+    const searchTerm = document.getElementById('guild-search-input')?.value.toLowerCase() || '';
+    const guildList = document.getElementById('guild-list');
+    
+    if (!guildList) return;
+    
+    const filteredGuilds = this.getGuildList().filter(guild => 
+      guild.name.toLowerCase().includes(searchTerm) ||
+      guild.description.toLowerCase().includes(searchTerm)
+    );
+    
+    guildList.innerHTML = filteredGuilds.map(guild => this.renderGuildListItem(guild)).join('');
+  }
+
+  sendGuildMessage() {
+    const input = document.getElementById('guild-chat-input');
+    const message = input?.value.trim();
+    
+    if (!message) return;
+    
+    this.sendGuildMessage(message);
+    input.value = '';
+  }
+
+  joinGuildEvent(eventId) {
+    this.showNotification(`Joined guild event: ${eventId}`);
+  }
+
+  upgradeGuildHall(upgradeId) {
+    this.showNotification(`Upgraded guild hall: ${upgradeId}`);
+  }
+
+  renderHouse() {
+    const houseData = this.getHouseData();
+    const currentCoins = this.currentUser.inventory.coins || 0;
+    
+    return `
+      <div class="house-container">
+        <!-- Header -->
+        <div class="dashboard-card">
+          <div class="card-header">
+            <h2 class="card-title">🏠 Player House</h2>
+            <div class="text-muted">Upgrade your home for permanent benefits</div>
+            <div class="coins-display">
+              <span class="coins-icon">🪙</span>
+              <span class="coins-amount">${this.formatCoins(currentCoins)}</span>
             </div>
           </div>
-          
-          <div class="card">
-            <h3>🪑 Furniture</h3>
-            <p class="text-muted">House customization coming soon!</p>
-            <p>Craft furniture using your Woodcutting and Smithing skills.</p>
+        </div>
+        
+        <!-- House Overview -->
+        <div class="dashboard-card">
+          <div class="house-stats-grid">
+            <div class="house-stat">
+              <div class="stat-icon">🏠</div>
+              <div class="stat-info">
+                <div class="stat-label">House Level</div>
+                <div class="stat-value">${houseData.level}</div>
+              </div>
+            </div>
+            <div class="house-stat">
+              <div class="stat-icon">🚪</div>
+              <div class="stat-info">
+                <div class="stat-label">Rooms</div>
+                <div class="stat-value">${houseData.rooms.length}</div>
+              </div>
+            </div>
+            <div class="house-stat">
+              <div class="stat-icon">✨</div>
+              <div class="stat-info">
+                <div class="stat-label">Total Bonuses</div>
+                <div class="stat-value">${this.getTotalHouseBonuses()}</div>
+              </div>
+            </div>
           </div>
-          
-          <div class="card">
-            <h3>👥 Visitors</h3>
-            <p class="text-muted">Invite friends to visit your house!</p>
-            <p>Available with multiplayer features.</p>
+        </div>
+        
+        <!-- House Tabs -->
+        <div class="house-tabs">
+          <button class="btn btn-primary" onclick="game.showHouseTab('rooms')" id="house-tab-rooms">
+            🏠 Rooms
+          </button>
+          <button class="btn btn-secondary" onclick="game.showHouseTab('furniture')" id="house-tab-furniture">
+            🪑 Furniture
+          </button>
+          <button class="btn btn-secondary" onclick="game.showHouseTab('bonuses')" id="house-tab-bonuses">
+            ⭐ Bonuses
+          </button>
+        </div>
+        
+        <!-- House Content -->
+        <div class="dashboard-card">
+          <div id="house-content">
+            ${this.renderHouseRooms()}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  renderHouseRooms() {
+    const houseData = this.getHouseData();
+    
+    return `
+      <div class="card">
+        <div class="card-header">
+          <h3>🏠 House Rooms</h3>
+          <div class="text-muted">Upgrade rooms for permanent benefits</div>
+        </div>
+        
+        <div class="grid grid-3">
+          ${houseData.rooms.map(room => this.renderRoomCard(room)).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  renderHouseFurniture() {
+    const furniture = this.getFurnitureData();
+    
+    return `
+      <div class="card">
+        <div class="card-header">
+          <h3>🪑 Furniture</h3>
+          <div class="text-muted">Craft furniture for additional bonuses</div>
+        </div>
+        
+        <div class="grid grid-4">
+          ${furniture.map(item => this.renderFurnitureCard(item)).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  renderHouseBonuses() {
+    const bonuses = this.getHouseBonuses();
+    
+    return `
+      <div class="card">
+        <div class="card-header">
+          <h3>⭐ House Bonuses</h3>
+          <div class="text-muted">Active benefits from your house upgrades</div>
+        </div>
+        
+        <div class="grid grid-3">
+          ${bonuses.map(bonus => this.renderBonusCard(bonus)).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  renderHouseAchievements() {
+    const achievements = this.getHouseAchievements();
+    
+    return `
+      <div class="card">
+        <div class="card-header">
+          <h3>🏆 House Achievements</h3>
+          <div class="text-muted">Unlock achievements by upgrading your house</div>
+        </div>
+        
+        <div class="grid grid-3">
+          ${achievements.map(achievement => this.renderHouseAchievementCard(achievement)).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  getHouseData() {
+    if (!this.currentUser.house) {
+      this.currentUser.house = {
+        level: 1,
+        rooms: [
+          { id: 'bedroom', name: 'Bedroom', level: 1, maxLevel: 10, unlocked: true },
+          { id: 'kitchen', name: 'Kitchen', level: 0, maxLevel: 10, unlocked: false },
+          { id: 'workshop', name: 'Workshop', level: 0, maxLevel: 10, unlocked: false },
+          { id: 'garden', name: 'Garden', level: 0, maxLevel: 10, unlocked: false },
+          { id: 'library', name: 'Library', level: 0, maxLevel: 10, unlocked: false },
+          { id: 'storage', name: 'Storage Room', level: 0, maxLevel: 10, unlocked: false }
+        ],
+        furniture: [],
+        achievements: []
+      };
+    }
+    return this.currentUser.house;
+  }
+
+  getFurnitureData() {
+    return [
+      {
+        id: 'wooden_chair',
+        name: 'Wooden Chair',
+        description: 'Basic seating furniture',
+        cost: { coins: 100, logs: 5 },
+        bonus: { xp: 1, type: 'all' },
+        unlocked: true
+      },
+      {
+        id: 'oak_table',
+        name: 'Oak Table',
+        description: 'Sturdy dining table',
+        cost: { coins: 500, oak_logs: 10 },
+        bonus: { xp: 2, type: 'all' },
+        unlocked: false
+      },
+      {
+        id: 'iron_lamp',
+        name: 'Iron Lamp',
+        description: 'Provides light and focus',
+        cost: { coins: 300, iron_ore: 5 },
+        bonus: { efficiency: 1, type: 'all' },
+        unlocked: false
+      },
+      {
+        id: 'bookshelf',
+        name: 'Bookshelf',
+        description: 'Stores knowledge and wisdom',
+        cost: { coins: 800, logs: 15, paper: 20 },
+        bonus: { xp: 3, efficiency: 1, type: 'all' },
+        unlocked: false
+      },
+      {
+        id: 'trophy_case',
+        name: 'Trophy Case',
+        description: 'Displays your achievements',
+        cost: { coins: 1000, logs: 20, iron_ore: 10 },
+        bonus: { xp: 5, type: 'all' },
+        unlocked: false
+      },
+      {
+        id: 'magic_crystal',
+        name: 'Magic Crystal',
+        description: 'Enhances all activities',
+        cost: { coins: 2000, sapphire: 1, logs: 30 },
+        bonus: { xp: 10, efficiency: 2, type: 'all' },
+        unlocked: false
+      }
+    ];
+  }
+
+  getHouseBonuses() {
+    const houseData = this.getHouseData();
+    const bonuses = [];
+    
+    // Room bonuses
+    houseData.rooms.forEach(room => {
+      if (room.level > 0) {
+        const roomBonuses = this.getRoomBonuses(room);
+        bonuses.push(...roomBonuses);
+      }
+    });
+    
+    // Furniture bonuses
+    houseData.furniture.forEach(furniture => {
+      const furnitureData = this.getFurnitureData().find(f => f.id === furniture.id);
+      if (furnitureData) {
+        bonuses.push({
+          name: furnitureData.name,
+          type: furnitureData.bonus.type,
+          xp: furnitureData.bonus.xp || 0,
+          efficiency: furnitureData.bonus.efficiency || 0,
+          inventory: furnitureData.bonus.inventory || 0
+        });
+      }
+    });
+    
+    return bonuses;
+  }
+
+  getRoomBonuses(room) {
+    const bonuses = [];
+    const level = room.level;
+    
+    switch(room.id) {
+      case 'bedroom':
+        bonuses.push({
+          name: 'Restful Sleep',
+          type: 'all',
+          xp: level * 2,
+          efficiency: Math.floor(level / 2),
+          inventory: Math.floor(level / 3)
+        });
+        break;
+      case 'kitchen':
+        bonuses.push({
+          name: 'Cooking Mastery',
+          type: 'cooking',
+          xp: level * 3,
+          efficiency: level
+        });
+        break;
+      case 'workshop':
+        bonuses.push({
+          name: 'Crafting Efficiency',
+          type: 'smithing',
+          xp: level * 2,
+          efficiency: level
+        });
+        break;
+      case 'garden':
+        bonuses.push({
+          name: 'Green Thumb',
+          type: 'farming',
+          xp: level * 2,
+          efficiency: level
+        });
+        break;
+      case 'library':
+        bonuses.push({
+          name: 'Scholarly Focus',
+          type: 'all',
+          xp: level * 1,
+          efficiency: Math.floor(level / 2)
+        });
+        break;
+      case 'storage':
+        bonuses.push({
+          name: 'Organized Storage',
+          type: 'all',
+          inventory: level * 5
+        });
+        break;
+    }
+    
+    return bonuses;
+  }
+
+  getHouseAchievements() {
+    const houseData = this.getHouseData();
+    const totalLevel = houseData.rooms.reduce((sum, room) => sum + room.level, 0);
+    
+    return [
+      {
+        id: 'first_room',
+        name: '🏠 First Room',
+        description: 'Upgrade your first room',
+        requirement: 'Upgrade any room to level 1',
+        completed: houseData.rooms.some(room => room.level >= 1),
+        reward: { coins: 100, xp: 50 }
+      },
+      {
+        id: 'house_level_5',
+        name: '🏘️ Growing Home',
+        description: 'Reach house level 5',
+        requirement: 'Total room levels: 5',
+        completed: totalLevel >= 5,
+        reward: { coins: 500, xp: 200 }
+      },
+      {
+        id: 'house_level_10',
+        name: '🏰 Mansion',
+        description: 'Reach house level 10',
+        requirement: 'Total room levels: 10',
+        completed: totalLevel >= 10,
+        reward: { coins: 1000, xp: 500 }
+      },
+      {
+        id: 'all_rooms',
+        name: '🏠 Complete Home',
+        description: 'Unlock all room types',
+        requirement: 'Unlock all 6 room types',
+        completed: houseData.rooms.every(room => room.unlocked),
+        reward: { coins: 2000, xp: 1000 }
+      },
+      {
+        id: 'furniture_collector',
+        name: '🪑 Furniture Collector',
+        description: 'Craft 5 pieces of furniture',
+        requirement: 'Craft 5 furniture items',
+        completed: houseData.furniture.length >= 5,
+        reward: { coins: 1500, xp: 750 }
+      },
+      {
+        id: 'house_master',
+        name: '👑 House Master',
+        description: 'Reach house level 25',
+        requirement: 'Total room levels: 25',
+        completed: totalLevel >= 25,
+        reward: { coins: 5000, xp: 2500 }
+      }
+    ];
+  }
+
+  renderRoomCard(room) {
+    const canUpgrade = this.canUpgradeRoom(room);
+    const upgradeCost = this.getRoomUpgradeCost(room);
+    const currentBonuses = this.getRoomBonuses(room);
+    
+    return `
+      <div class="card room-card ${!room.unlocked ? 'room-locked' : ''}">
+        <div class="room-header">
+          <h3>${room.name}</h3>
+          <div class="room-level">Level ${room.level}/${room.maxLevel}</div>
+        </div>
+        
+        <div class="room-status">
+          ${!room.unlocked ? `
+            <p class="text-muted">Locked - Complete previous rooms to unlock</p>
+          ` : `
+            <div class="room-bonuses">
+              ${currentBonuses.map(bonus => `
+                <div class="bonus-item">
+                  <span class="bonus-icon">${bonus.xp ? '⭐' : bonus.efficiency ? '⚡' : '🎒'}</span>
+                  <span class="bonus-text">
+                    ${bonus.xp ? `+${bonus.xp} XP` : ''}
+                    ${bonus.efficiency ? `+${bonus.efficiency}% Efficiency` : ''}
+                    ${bonus.inventory ? `+${bonus.inventory} Inventory` : ''}
+                  </span>
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </div>
+        
+        <div class="room-actions">
+          ${!room.unlocked ? `
+            <button class="btn btn-secondary" disabled>Locked</button>
+          ` : room.level >= room.maxLevel ? `
+            <button class="btn btn-success" disabled>Max Level</button>
+          ` : canUpgrade ? `
+            <button class="btn btn-primary" onclick="game.upgradeRoom('${room.id}')">
+              Upgrade (${this.formatCoins(upgradeCost.coins)})
+            </button>
+          ` : `
+            <button class="btn btn-secondary" disabled>Insufficient Resources</button>
+          `}
+        </div>
+      </div>
+    `;
+  }
+
+  renderFurnitureCard(furniture) {
+    const canCraft = this.canCraftFurniture(furniture);
+    const isOwned = this.currentUser.house.furniture.some(f => f.id === furniture.id);
+    
+    return `
+      <div class="card furniture-card ${isOwned ? 'furniture-owned' : ''}">
+        <div class="furniture-header">
+          <h3>${furniture.name}</h3>
+          <div class="furniture-status">${isOwned ? '✓ Owned' : 'Not Owned'}</div>
+        </div>
+        
+        <p class="furniture-description">${furniture.description}</p>
+        
+        <div class="furniture-bonus">
+          <strong>Bonus:</strong>
+          ${furniture.bonus.xp ? `<span class="bonus-xp">+${furniture.bonus.xp} XP</span>` : ''}
+          ${furniture.bonus.efficiency ? `<span class="bonus-efficiency">+${furniture.bonus.efficiency}% Efficiency</span>` : ''}
+        </div>
+        
+        <div class="furniture-cost">
+          <strong>Cost:</strong>
+          ${this.formatCoins(furniture.cost.coins)}
+          ${furniture.cost.logs ? ` + ${furniture.cost.logs} logs` : ''}
+          ${furniture.cost.oak_logs ? ` + ${furniture.cost.oak_logs} oak logs` : ''}
+          ${furniture.cost.iron_ore ? ` + ${furniture.cost.iron_ore} iron ore` : ''}
+        </div>
+        
+        <div class="furniture-actions">
+          ${isOwned ? `
+            <button class="btn btn-success" disabled>✓ Owned</button>
+          ` : canCraft ? `
+            <button class="btn btn-primary" onclick="game.craftFurniture('${furniture.id}')">
+              Craft
+            </button>
+          ` : `
+            <button class="btn btn-secondary" disabled>Need Resources</button>
+          `}
+        </div>
+      </div>
+    `;
+  }
+
+  renderBonusCard(bonus) {
+    return `
+      <div class="card bonus-card">
+        <div class="bonus-header">
+          <h3>${bonus.name}</h3>
+          <div class="bonus-type">${bonus.type === 'all' ? 'All Skills' : bonus.type}</div>
+        </div>
+        
+        <div class="bonus-effects">
+          ${bonus.xp ? `<div class="bonus-effect">⭐ +${bonus.xp} XP</div>` : ''}
+          ${bonus.efficiency ? `<div class="bonus-effect">⚡ +${bonus.efficiency}% Efficiency</div>` : ''}
+          ${bonus.inventory ? `<div class="bonus-effect">🎒 +${bonus.inventory} Inventory</div>` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  renderHouseAchievementCard(achievement) {
+    return `
+      <div class="card achievement-card ${achievement.completed ? 'achievement-completed' : ''}">
+        <div class="achievement-header">
+          <h3>${achievement.name}</h3>
+          <div class="achievement-status">${achievement.completed ? '✓' : '○'}</div>
+        </div>
+        
+        <p class="achievement-description">${achievement.description}</p>
+        <p class="achievement-requirement">${achievement.requirement}</p>
+        
+        <div class="achievement-reward">
+          <strong>Reward:</strong>
+          ${achievement.reward.coins ? `<span class="reward-coins">+${this.formatCoins(achievement.reward.coins)}</span>` : ''}
+          ${achievement.reward.xp ? `<span class="reward-xp">+${achievement.reward.xp} XP</span>` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  canUpgradeRoom(room) {
+    if (!room.unlocked || room.level >= room.maxLevel) return false;
+    
+    const cost = this.getRoomUpgradeCost(room);
+    const coins = this.currentUser.inventory.coins || 0;
+    
+    if (coins < cost.coins) return false;
+    
+    // Check resource requirements
+    for (const [resource, amount] of Object.entries(cost)) {
+      if (resource === 'coins') continue;
+      if ((this.currentUser.inventory[resource] || 0) < amount) return false;
+    }
+    
+    return true;
+  }
+
+  getRoomUpgradeCost(room) {
+    const level = room.level + 1;
+    const baseCost = {
+      bedroom: { coins: 100, logs: 10 },
+      kitchen: { coins: 200, logs: 15, iron_ore: 5 },
+      workshop: { coins: 300, logs: 20, iron_ore: 10 },
+      garden: { coins: 150, logs: 5, wheat: 10 },
+      library: { coins: 400, logs: 25, paper: 15 },
+      storage: { coins: 250, logs: 20, iron_ore: 5 }
+    };
+    
+    const cost = baseCost[room.id] || { coins: 100 };
+    return {
+      coins: cost.coins * level,
+      ...Object.fromEntries(
+        Object.entries(cost)
+          .filter(([key]) => key !== 'coins')
+          .map(([key, value]) => [key, value * level])
+      )
+    };
+  }
+
+  canCraftFurniture(furniture) {
+    if (!furniture.unlocked) return false;
+    
+    const coins = this.currentUser.inventory.coins || 0;
+    if (coins < furniture.cost.coins) return false;
+    
+    // Check resource requirements
+    for (const [resource, amount] of Object.entries(furniture.cost)) {
+      if (resource === 'coins') continue;
+      if ((this.currentUser.inventory[resource] || 0) < amount) return false;
+    }
+    
+    return true;
+  }
+
+  getTotalHouseBonuses() {
+    const bonuses = this.getHouseBonuses();
+    return bonuses.length;
+  }
+
+  getMaxInventorySlots() {
+    const baseSlots = 20; // Base inventory slots
+    const houseBonuses = this.getHouseBonuses();
+    let bonusSlots = 0;
+    
+    houseBonuses.forEach(bonus => {
+      bonusSlots += bonus.inventory || 0;
+    });
+    
+    return baseSlots + bonusSlots;
+  }
+
+  getCurrentInventorySlots() {
+    return Object.keys(this.currentUser.inventory).filter(itemId => itemId !== 'coins').length;
+  }
+
+  canAddToInventory() {
+    return this.getCurrentInventorySlots() < this.getMaxInventorySlots();
+  }
+
+  upgradeRoom(roomId) {
+    const houseData = this.getHouseData();
+    const room = houseData.rooms.find(r => r.id === roomId);
+    
+    if (!room || !this.canUpgradeRoom(room)) {
+      this.showNotification('Cannot upgrade room!');
+      return;
+    }
+    
+    const cost = this.getRoomUpgradeCost(room);
+    
+    // Deduct costs
+    this.currentUser.inventory.coins -= cost.coins;
+    for (const [resource, amount] of Object.entries(cost)) {
+      if (resource === 'coins') continue;
+      this.currentUser.inventory[resource] -= amount;
+    }
+    
+    // Upgrade room
+    room.level++;
+    
+    // Unlock next room if applicable
+    this.checkRoomUnlocks();
+    
+    this.saveUserData();
+    this.render();
+    this.showNotification(`${room.name} upgraded to level ${room.level}!`);
+  }
+
+  craftFurniture(furnitureId) {
+    const furniture = this.getFurnitureData().find(f => f.id === furnitureId);
+    
+    if (!furniture || !this.canCraftFurniture(furniture)) {
+      this.showNotification('Cannot craft furniture!');
+      return;
+    }
+    
+    // Deduct costs
+    this.currentUser.inventory.coins -= furniture.cost.coins;
+    for (const [resource, amount] of Object.entries(furniture.cost)) {
+      if (resource === 'coins') continue;
+      this.currentUser.inventory[resource] -= amount;
+    }
+    
+    // Add furniture
+    this.currentUser.house.furniture.push({
+      id: furnitureId,
+      craftedAt: new Date().toISOString()
+    });
+    
+    this.saveUserData();
+    this.render();
+    this.showNotification(`${furniture.name} crafted successfully!`);
+  }
+
+  checkRoomUnlocks() {
+    const houseData = this.getHouseData();
+    const totalLevel = houseData.rooms.reduce((sum, room) => sum + room.level, 0);
+    
+    // Unlock rooms based on total level
+    if (totalLevel >= 2 && !houseData.rooms.find(r => r.id === 'kitchen').unlocked) {
+      houseData.rooms.find(r => r.id === 'kitchen').unlocked = true;
+    }
+    if (totalLevel >= 5 && !houseData.rooms.find(r => r.id === 'workshop').unlocked) {
+      houseData.rooms.find(r => r.id === 'workshop').unlocked = true;
+    }
+    if (totalLevel >= 8 && !houseData.rooms.find(r => r.id === 'garden').unlocked) {
+      houseData.rooms.find(r => r.id === 'garden').unlocked = true;
+    }
+    if (totalLevel >= 12 && !houseData.rooms.find(r => r.id === 'library').unlocked) {
+      houseData.rooms.find(r => r.id === 'library').unlocked = true;
+    }
+    if (totalLevel >= 15 && !houseData.rooms.find(r => r.id === 'storage').unlocked) {
+      houseData.rooms.find(r => r.id === 'storage').unlocked = true;
+    }
+  }
+
+  showHouseTab(tab) {
+    // Update tab buttons
+    document.querySelectorAll('[id^="house-tab-"]').forEach(btn => {
+      btn.className = 'btn btn-secondary';
+    });
+    document.getElementById(`house-tab-${tab}`).className = 'btn btn-primary';
+    
+    // Update content
+    const content = document.getElementById('house-content');
+    switch(tab) {
+      case 'rooms':
+        content.innerHTML = this.renderHouseRooms();
+        break;
+      case 'furniture':
+        content.innerHTML = this.renderHouseFurniture();
+        break;
+      case 'bonuses':
+        content.innerHTML = this.renderHouseBonuses();
+        break;
+    }
+  }
+
+  renderSkillsOverview() {
+    const skills = this.gameData.skills;
+    const categories = {
+      gathering: Object.entries(skills).filter(([_, skill]) => skill.category === 'gathering'),
+      production: Object.entries(skills).filter(([_, skill]) => skill.category === 'production'),
+      combat: Object.entries(skills).filter(([_, skill]) => skill.category === 'combat')
+    };
+
+    return `
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">⚡ Skills Overview</h2>
+          <div class="text-muted">All your skills at a glance</div>
+        </div>
+        
+        <!-- Skills Categories -->
+        <div class="skills-categories">
+          ${this.renderSkillsCategory('Gathering', categories.gathering, '🪓')}
+          ${this.renderSkillsCategory('Production', categories.production, '🔨')}
+          ${this.renderSkillsCategory('Combat', categories.combat, '⚔️')}
+        </div>
+      </div>
+    `;
+  }
+
+  renderSkillsCategory(title, skills, icon) {
+    return `
+      <div class="skills-category">
+        <div class="category-header">
+          <h3>${icon} ${title}</h3>
+          <div class="category-stats">
+            <span class="stat">Total Level: <strong>${this.getCategoryTotalLevel(skills)}</strong></span>
+            <span class="stat">Skills: <strong>${skills.length}</strong></span>
+          </div>
+        </div>
+        
+        <div class="skills-grid">
+          ${skills.map(([skillId, skillData]) => this.renderSkillCard(skillId, skillData)).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  renderSkillCard(skillId, skillData) {
+    const userSkill = this.currentUser.skills[skillId] || { level: 1, xp: 0 };
+    const nextLevelXP = this.calculateXPForLevel(userSkill.level + 1);
+    const currentLevelXP = this.calculateXPForLevel(userSkill.level);
+    const progress = ((userSkill.xp - currentLevelXP) / (nextLevelXP - currentLevelXP)) * 100;
+    
+    return `
+      <div class="skill-card" onclick="game.navigateTo('${skillId}')">
+        <div class="skill-header">
+          <div class="skill-icon">${skillData.icon}</div>
+          <div class="skill-info">
+            <div class="skill-name">${skillData.name}</div>
+            <div class="skill-level">Level ${userSkill.level}</div>
+          </div>
+          <div class="skill-xp">${userSkill.xp.toLocaleString()} XP</div>
+        </div>
+        
+        <div class="skill-progress">
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: ${progress}%"></div>
+          </div>
+          <div class="progress-text">
+            ${Math.floor(progress)}% to level ${userSkill.level + 1}
+          </div>
+        </div>
+        
+        <div class="skill-description">${skillData.description}</div>
+      </div>
+    `;
+  }
+
+  getCategoryTotalLevel(skills) {
+    return skills.reduce((total, [skillId, _]) => {
+      const userSkill = this.currentUser.skills[skillId] || { level: 1 };
+      return total + userSkill.level;
+    }, 0);
+  }
+
+  calculateXPForLevel(level) {
+    // OSRS-style XP formula: XP = level^2 * 100
+    return Math.floor(Math.pow(level - 1, 2) * 100);
+  }
+
+  renderSocial() {
+    return `
+      <div class="social-container">
+        <!-- Header -->
+        <div class="dashboard-card">
+          <div class="card-header">
+            <h2 class="card-title">👥 Social</h2>
+            <div class="text-muted">Connect with other players</div>
+          </div>
+        </div>
+        
+        <!-- Social Tabs -->
+        <div class="social-tabs">
+          <button class="btn btn-primary" onclick="game.showSocialTab('chat')" id="social-tab-chat">
+            💬 Global Chat
+          </button>
+          <button class="btn btn-secondary" onclick="game.showSocialTab('friends')" id="social-tab-friends">
+            👥 Friends
+          </button>
+          <button class="btn btn-secondary" onclick="game.showSocialTab('players')" id="social-tab-players">
+            🔍 Find Players
+          </button>
+        </div>
+        
+        <!-- Social Content -->
+        <div class="dashboard-card">
+          <div id="social-content">
+            ${this.renderGlobalChat()}
           </div>
         </div>
       </div>
@@ -2160,90 +6241,624 @@ class BMTIdle {
 
   renderLeaderboard() {
     return `
-      <div class="card">
-        <div class="card-header">
-          <h2 class="card-title">🏆 Leaderboards</h2>
-          <div class="text-muted">Top players in various categories</div>
+      <div class="leaderboard-container">
+        <!-- Header -->
+        <div class="dashboard-card">
+          <div class="card-header">
+            <h2 class="card-title">🏆 Leaderboards</h2>
+            <div class="text-muted">Compete with players worldwide</div>
+          </div>
         </div>
         
-        <div class="grid grid-2">
-          <div class="card">
-            <h3>📊 Overall Rankings</h3>
-            <table style="width: 100%; border-collapse: collapse;">
-              <thead>
-                <tr style="border-bottom: 1px solid #37474f;">
-                  <th style="padding: 8px; text-align: left;">Rank</th>
-                  <th style="padding: 8px; text-align: left;">Player</th>
-                  <th style="padding: 8px; text-align: left;">Total Level</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td style="padding: 8px;">1</td>
-                  <td style="padding: 8px; color: var(--osrs-gold);">${this.currentUser.username}</td>
-                  <td style="padding: 8px;">${Object.values(this.currentUser.skills).reduce((sum, skill) => sum + skill.level, 0)}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px;" class="text-muted" colspan="3">More players will appear when multiplayer is available</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          
-          <div class="card">
-            <h3>⚔️ Combat Rankings</h3>
-            <table style="width: 100%; border-collapse: collapse;">
-              <thead>
-                <tr style="border-bottom: 1px solid #37474f;">
-                  <th style="padding: 8px; text-align: left;">Rank</th>
-                  <th style="padding: 8px; text-align: left;">Player</th>
-                  <th style="padding: 8px; text-align: left;">Combat Level</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td style="padding: 8px;">1</td>
-                  <td style="padding: 8px; color: var(--osrs-gold);">${this.currentUser.username}</td>
-                  <td style="padding: 8px;">${this.calculateCombatLevel()}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px;" class="text-muted" colspan="3">More players will appear when multiplayer is available</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          
-          <div class="card">
-            <h3>🪓 Woodcutting Rankings</h3>
-            <p><strong>Your Level:</strong> ${this.currentUser.skills.woodcutting.level}</p>
-            <p><strong>Your XP:</strong> ${this.formatNumber(this.currentUser.skills.woodcutting.xp)}</p>
-            <p class="text-muted">Compete with other players when multiplayer is available!</p>
-          </div>
-          
-          <div class="card">
-            <h3>⛏️ Mining Rankings</h3>
-            <p><strong>Your Level:</strong> ${this.currentUser.skills.mining.level}</p>
-            <p><strong>Your XP:</strong> ${this.formatNumber(this.currentUser.skills.mining.xp)}</p>
-            <p class="text-muted">Compete with other players when multiplayer is available!</p>
+        <!-- Leaderboard Tabs -->
+        <div class="leaderboard-tabs">
+          <button class="btn btn-primary" onclick="game.showLeaderboardTab('overall')" id="leaderboard-tab-overall">
+            📊 Overall
+          </button>
+          <button class="btn btn-secondary" onclick="game.showLeaderboardTab('combat')" id="leaderboard-tab-combat">
+            ⚔️ Combat
+          </button>
+          <button class="btn btn-secondary" onclick="game.showLeaderboardTab('skills')" id="leaderboard-tab-skills">
+            ⚡ Skills
+          </button>
+          <button class="btn btn-secondary" onclick="game.showLeaderboardTab('guilds')" id="leaderboard-tab-guilds">
+            🏛️ Guilds
+          </button>
+          <button class="btn btn-secondary" onclick="game.showLeaderboardTab('wealth')" id="leaderboard-tab-wealth">
+            💰 Wealth
+          </button>
+        </div>
+        
+        <!-- Leaderboard Content -->
+        <div class="dashboard-card">
+          <div id="leaderboard-content">
+            ${this.renderOverallLeaderboard()}
           </div>
         </div>
       </div>
     `;
   }
 
+  renderOverallLeaderboard() {
+    return `
+      <div class="leaderboard-container">
+        <div class="leaderboard-header">
+          <h3>📊 Overall Rankings</h3>
+          <div class="leaderboard-stats">
+            <span class="stat-item">Total Players: <strong>1,247</strong></span>
+            <span class="stat-item">Your Rank: <strong class="text-primary">#1</strong></span>
+          </div>
+        </div>
+        
+        <div class="leaderboard-table">
+          <div class="leaderboard-row leaderboard-header-row">
+            <div class="rank-col">Rank</div>
+            <div class="player-col">Player</div>
+            <div class="level-col">Total Level</div>
+            <div class="xp-col">Total XP</div>
+            <div class="status-col">Status</div>
+          </div>
+          
+          ${this.renderLeaderboardRows('overall')}
+        </div>
+      </div>
+    `;
+  }
+
+  renderCombatLeaderboard() {
+    return `
+      <div class="leaderboard-container">
+        <div class="leaderboard-header">
+          <h3>⚔️ Combat Rankings</h3>
+          <div class="leaderboard-stats">
+            <span class="stat-item">Combatants: <strong>892</strong></span>
+            <span class="stat-item">Your Rank: <strong class="text-primary">#1</strong></span>
+          </div>
+        </div>
+        
+        <div class="leaderboard-table">
+          <div class="leaderboard-row leaderboard-header-row">
+            <div class="rank-col">Rank</div>
+            <div class="player-col">Player</div>
+            <div class="level-col">Combat Level</div>
+            <div class="xp-col">Combat XP</div>
+            <div class="status-col">Status</div>
+          </div>
+          
+          ${this.renderLeaderboardRows('combat')}
+        </div>
+      </div>
+    `;
+  }
+
+  renderSkillsLeaderboard() {
+    return `
+      <div class="leaderboard-container">
+        <div class="leaderboard-header">
+          <h3>⚡ Skills Rankings</h3>
+          <div class="leaderboard-stats">
+            <span class="stat-item">Skill Masters: <strong>1,156</strong></span>
+            <span class="stat-item">Your Rank: <strong class="text-primary">#1</strong></span>
+          </div>
+        </div>
+        
+        <!-- Skill Selection -->
+        <div class="skill-selector">
+          <button class="btn btn-secondary active" onclick="game.showSkillLeaderboard('woodcutting')" id="skill-woodcutting">
+            🪓 Woodcutting
+          </button>
+          <button class="btn btn-secondary" onclick="game.showSkillLeaderboard('mining')" id="skill-mining">
+            ⛏️ Mining
+          </button>
+          <button class="btn btn-secondary" onclick="game.showSkillLeaderboard('fishing')" id="skill-fishing">
+            🎣 Fishing
+          </button>
+          <button class="btn btn-secondary" onclick="game.showSkillLeaderboard('farming')" id="skill-farming">
+            🌾 Farming
+          </button>
+          <button class="btn btn-secondary" onclick="game.showSkillLeaderboard('smithing')" id="skill-smithing">
+            🔨 Smithing
+          </button>
+        </div>
+        
+        <div class="leaderboard-table">
+          <div class="leaderboard-row leaderboard-header-row">
+            <div class="rank-col">Rank</div>
+            <div class="player-col">Player</div>
+            <div class="level-col">Level</div>
+            <div class="xp-col">XP</div>
+            <div class="status-col">Status</div>
+          </div>
+          
+          <div id="skill-leaderboard-content">
+            ${this.renderSkillLeaderboardRows('woodcutting')}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  renderGuildsLeaderboard() {
+    return `
+      <div class="leaderboard-container">
+        <div class="leaderboard-header">
+          <h3>🏛️ Guild Rankings</h3>
+          <div class="leaderboard-stats">
+            <span class="stat-item">Active Guilds: <strong>156</strong></span>
+            <span class="stat-item">Your Guild: <strong class="text-primary">#1</strong></span>
+          </div>
+        </div>
+        
+        <div class="leaderboard-table">
+          <div class="leaderboard-row leaderboard-header-row">
+            <div class="rank-col">Rank</div>
+            <div class="guild-col">Guild</div>
+            <div class="members-col">Members</div>
+            <div class="level-col">Avg Level</div>
+            <div class="xp-col">Total XP</div>
+          </div>
+          
+          ${this.renderGuildLeaderboardRows()}
+        </div>
+      </div>
+    `;
+  }
+
+  renderWealthLeaderboard() {
+    return `
+      <div class="leaderboard-container">
+        <div class="leaderboard-header">
+          <h3>💰 Wealth Rankings</h3>
+          <div class="leaderboard-stats">
+            <span class="stat-item">Wealthy Players: <strong>743</strong></span>
+            <span class="stat-item">Your Rank: <strong class="text-primary">#1</strong></span>
+          </div>
+        </div>
+        
+        <div class="leaderboard-table">
+          <div class="leaderboard-row leaderboard-header-row">
+            <div class="rank-col">Rank</div>
+            <div class="player-col">Player</div>
+            <div class="wealth-col">Total Wealth</div>
+            <div class="coins-col">Coins</div>
+            <div class="status-col">Status</div>
+          </div>
+          
+          ${this.renderLeaderboardRows('wealth')}
+        </div>
+      </div>
+    `;
+  }
+
+  renderLeaderboardRows(category) {
+    // In multiplayer mode, this would fetch real data from the server
+    // For now, we'll show the current user as #1 with sample data
+    const currentUser = this.currentUser;
+    const totalLevel = Object.values(currentUser.skills).reduce((sum, skill) => sum + skill.level, 0);
+    const totalXP = Object.values(currentUser.skills).reduce((sum, skill) => sum + skill.xp, 0);
+    const combatLevel = this.calculateCombatLevel();
+    const totalWealth = (currentUser.inventory.coins || 0) + this.calculateItemValue();
+    
+    let playerData = {};
+    
+    switch(category) {
+      case 'overall':
+        playerData = {
+          level: totalLevel,
+          xp: totalXP,
+          displayValue: totalLevel
+        };
+        break;
+      case 'combat':
+        playerData = {
+          level: combatLevel,
+          xp: currentUser.skills.attack?.xp + currentUser.skills.strength?.xp + currentUser.skills.defence?.xp || 0,
+          displayValue: combatLevel
+        };
+        break;
+      case 'wealth':
+        playerData = {
+          wealth: totalWealth,
+          coins: currentUser.inventory.coins || 0,
+          displayValue: this.formatCoins(totalWealth)
+        };
+        break;
+    }
+    
+    return `
+      <div class="leaderboard-row leaderboard-player-row current-player">
+        <div class="rank-col">
+          <span class="rank-number">1</span>
+          <span class="rank-medal">🥇</span>
+        </div>
+        <div class="player-col">
+          <div class="player-info">
+            <span class="player-name">${currentUser.username}</span>
+            <span class="player-guild">${this.getGuildData().name || 'No Guild'}</span>
+          </div>
+        </div>
+        <div class="level-col">${playerData.level || playerData.wealth || 'N/A'}</div>
+        <div class="xp-col">${playerData.xp ? this.formatNumber(playerData.xp) : (playerData.coins ? this.formatCoins(playerData.coins) : 'N/A')}</div>
+        <div class="status-col">
+          <span class="status-indicator online">Online</span>
+        </div>
+      </div>
+      
+      <!-- Sample players for demonstration -->
+      <div class="leaderboard-row leaderboard-player-row">
+        <div class="rank-col">
+          <span class="rank-number">2</span>
+        </div>
+        <div class="player-col">
+          <div class="player-info">
+            <span class="player-name">DragonSlayer99</span>
+            <span class="player-guild">Elite Warriors</span>
+          </div>
+        </div>
+        <div class="level-col">${(totalLevel - 15)}</div>
+        <div class="xp-col">${this.formatNumber(totalXP - 5000)}</div>
+        <div class="status-col">
+          <span class="status-indicator online">Online</span>
+        </div>
+      </div>
+      
+      <div class="leaderboard-row leaderboard-player-row">
+        <div class="rank-col">
+          <span class="rank-number">3</span>
+        </div>
+        <div class="player-col">
+          <div class="player-info">
+            <span class="player-name">MiningMaster</span>
+            <span class="player-guild">Crafters United</span>
+          </div>
+        </div>
+        <div class="level-col">${(totalLevel - 25)}</div>
+        <div class="xp-col">${this.formatNumber(totalXP - 8000)}</div>
+        <div class="status-col">
+          <span class="status-indicator offline">Offline</span>
+        </div>
+      </div>
+      
+      <div class="leaderboard-row leaderboard-player-row">
+        <div class="rank-col">
+          <span class="rank-number">4</span>
+        </div>
+        <div class="player-col">
+          <div class="player-info">
+            <span class="player-name">FishingKing</span>
+            <span class="player-guild">Ocean Guardians</span>
+          </div>
+        </div>
+        <div class="level-col">${(totalLevel - 35)}</div>
+        <div class="xp-col">${this.formatNumber(totalXP - 12000)}</div>
+        <div class="status-col">
+          <span class="status-indicator online">Online</span>
+        </div>
+      </div>
+      
+      <div class="leaderboard-row leaderboard-player-row">
+        <div class="rank-col">
+          <span class="rank-number">5</span>
+        </div>
+        <div class="player-col">
+          <div class="player-info">
+            <span class="player-name">GuildLeader</span>
+            <span class="player-guild">Mystic Order</span>
+          </div>
+        </div>
+        <div class="level-col">${(totalLevel - 45)}</div>
+        <div class="xp-col">${this.formatNumber(totalXP - 15000)}</div>
+        <div class="status-col">
+          <span class="status-indicator online">Online</span>
+        </div>
+      </div>
+    `;
+  }
+
+  renderSkillLeaderboardRows(skill) {
+    const skillData = this.currentUser.skills[skill];
+    const skillName = skill.charAt(0).toUpperCase() + skill.slice(1);
+    
+    return `
+      <div class="leaderboard-row leaderboard-player-row current-player">
+        <div class="rank-col">
+          <span class="rank-number">1</span>
+          <span class="rank-medal">🥇</span>
+        </div>
+        <div class="player-col">
+          <div class="player-info">
+            <span class="player-name">${this.currentUser.username}</span>
+            <span class="player-guild">${this.getGuildData().name || 'No Guild'}</span>
+          </div>
+        </div>
+        <div class="level-col">${skillData.level}</div>
+        <div class="xp-col">${this.formatNumber(skillData.xp)}</div>
+        <div class="status-col">
+          <span class="status-indicator online">Online</span>
+        </div>
+      </div>
+      
+      <!-- Sample players for this skill -->
+      <div class="leaderboard-row leaderboard-player-row">
+        <div class="rank-col">
+          <span class="rank-number">2</span>
+        </div>
+        <div class="player-col">
+          <div class="player-info">
+            <span class="player-name">${skillName}Expert</span>
+            <span class="player-guild">Skill Masters</span>
+          </div>
+        </div>
+        <div class="level-col">${Math.max(1, skillData.level - 5)}</div>
+        <div class="xp-col">${this.formatNumber(Math.max(0, skillData.xp - 1000))}</div>
+        <div class="status-col">
+          <span class="status-indicator online">Online</span>
+        </div>
+      </div>
+      
+      <div class="leaderboard-row leaderboard-player-row">
+        <div class="rank-col">
+          <span class="rank-number">3</span>
+        </div>
+        <div class="player-col">
+          <div class="player-info">
+            <span class="player-name">${skillName}Pro</span>
+            <span class="player-guild">Elite Crafters</span>
+          </div>
+        </div>
+        <div class="level-col">${Math.max(1, skillData.level - 8)}</div>
+        <div class="xp-col">${this.formatNumber(Math.max(0, skillData.xp - 2000))}</div>
+        <div class="status-col">
+          <span class="status-indicator offline">Offline</span>
+        </div>
+      </div>
+    `;
+  }
+
+  renderGuildLeaderboardRows() {
+    const guildData = this.getGuildData();
+    const totalLevel = Object.values(this.currentUser.skills).reduce((sum, skill) => sum + skill.level, 0);
+    const totalXP = Object.values(this.currentUser.skills).reduce((sum, skill) => sum + skill.xp, 0);
+    
+    return `
+      <div class="leaderboard-row leaderboard-player-row current-player">
+        <div class="rank-col">
+          <span class="rank-number">1</span>
+          <span class="rank-medal">🥇</span>
+        </div>
+        <div class="guild-col">
+          <div class="guild-info">
+            <span class="guild-name">${guildData.name || 'Your Guild'}</span>
+            <span class="guild-tag">${guildData.tag || 'TAG'}</span>
+          </div>
+        </div>
+        <div class="members-col">${guildData.memberCount || 1}</div>
+        <div class="level-col">${Math.floor(totalLevel / (guildData.memberCount || 1))}</div>
+        <div class="xp-col">${this.formatNumber(totalXP)}</div>
+      </div>
+      
+      <!-- Sample guilds -->
+      <div class="leaderboard-row leaderboard-player-row">
+        <div class="rank-col">
+          <span class="rank-number">2</span>
+        </div>
+        <div class="guild-col">
+          <div class="guild-info">
+            <span class="guild-name">Elite Warriors</span>
+            <span class="guild-tag">EWAR</span>
+          </div>
+        </div>
+        <div class="members-col">25</div>
+        <div class="level-col">${Math.floor((totalLevel - 50) / 25)}</div>
+        <div class="xp-col">${this.formatNumber(totalXP - 10000)}</div>
+      </div>
+      
+      <div class="leaderboard-row leaderboard-player-row">
+        <div class="rank-col">
+          <span class="rank-number">3</span>
+        </div>
+        <div class="guild-col">
+          <div class="guild-info">
+            <span class="guild-name">Crafters United</span>
+            <span class="guild-tag">CRAFT</span>
+          </div>
+        </div>
+        <div class="members-col">18</div>
+        <div class="level-col">${Math.floor((totalLevel - 75) / 18)}</div>
+        <div class="xp-col">${this.formatNumber(totalXP - 15000)}</div>
+      </div>
+    `;
+  }
+
+  showLeaderboardTab(tab) {
+    // Update tab buttons
+    document.querySelectorAll('[id^="leaderboard-tab-"]').forEach(btn => {
+      btn.className = 'btn btn-secondary';
+    });
+    document.getElementById(`leaderboard-tab-${tab}`).className = 'btn btn-primary';
+    
+    // Update content
+    const content = document.getElementById('leaderboard-content');
+    switch(tab) {
+      case 'overall':
+        content.innerHTML = this.renderOverallLeaderboard();
+        break;
+      case 'combat':
+        content.innerHTML = this.renderCombatLeaderboard();
+        break;
+      case 'skills':
+        content.innerHTML = this.renderSkillsLeaderboard();
+        break;
+      case 'guilds':
+        content.innerHTML = this.renderGuildsLeaderboard();
+        break;
+      case 'wealth':
+        content.innerHTML = this.renderWealthLeaderboard();
+        break;
+    }
+  }
+
+  showSkillLeaderboard(skill) {
+    // Update skill buttons
+    document.querySelectorAll('.skill-selector .btn').forEach(btn => {
+      btn.className = 'btn btn-secondary';
+    });
+    document.getElementById(`skill-${skill}`).className = 'btn btn-secondary active';
+    
+    // Update skill leaderboard content
+    const content = document.getElementById('skill-leaderboard-content');
+    content.innerHTML = this.renderSkillLeaderboardRows(skill);
+  }
+
+  calculateItemValue() {
+    // Calculate total value of items in inventory
+    let totalValue = 0;
+    for (const [itemId, quantity] of Object.entries(this.currentUser.inventory)) {
+      if (itemId === 'coins') continue;
+      const itemData = this.gameData.items[itemId];
+      if (itemData && itemData.value) {
+        totalValue += itemData.value * quantity;
+      }
+    }
+    return totalValue;
+  }
+
+  // API functions for multiplayer (will be implemented when game goes online)
+  async fetchLeaderboardData(category, skill = null) {
+    try {
+      const endpoint = skill ? `/api/leaderboard/${category}/${skill}` : `/api/leaderboard/${category}`;
+      const response = await fetch(endpoint);
+      if (!response.ok) throw new Error('Failed to fetch leaderboard data');
+      return await response.json();
+    } catch (error) {
+      console.log('Offline mode: Using local leaderboard data');
+      return this.getLocalLeaderboardData(category, skill);
+    }
+  }
+
+  getLocalLeaderboardData(category, skill = null) {
+    // Return local data for offline mode
+    // This would be replaced with real server data in multiplayer
+    return {
+      players: [],
+      totalPlayers: 1,
+      userRank: 1
+    };
+  }
+
   renderChangelog() {
     return `
-      <div class="card">
-        <div class="card-header">
-          <h2 class="card-title">📋 Game Updates</h2>
-          <div class="text-muted">Latest changes and improvements</div>
+      <div class="changelog-container">
+        <div class="dashboard-card">
+          <div class="card-header">
+            <h2 class="card-title">📋 Game Updates</h2>
+            <div class="text-muted">Latest changes and improvements</div>
+          </div>
+        
+        <div class="card">
+          <h3>🎯 Version 1.4.0 - Quest System Overhaul</h3>
+          <div class="text-muted" style="margin-bottom: 1rem;">September 23, 2025</div>
+          
+          <h4>✨ New Features:</h4>
+          <ul>
+            <li>Comprehensive quest system with 4 quest types</li>
+            <li>6 Daily quests with 24-hour reset cycle</li>
+            <li>7 Weekly quests with 7-day reset cycle</li>
+            <li>Story quests with prerequisite chains</li>
+            <li>Achievement system with permanent rewards</li>
+            <li>Quest acceptance feedback and progress tracking</li>
+            <li>Compact 3-column quest interface</li>
+            <li>Real-time quest progress updates</li>
+          </ul>
+          
+          <h4>🛠️ Improvements:</h4>
+          <ul>
+            <li>Fixed quest system infinite loop bug</li>
+            <li>Enhanced quest card visual design</li>
+            <li>Added quest state indicators (Accept → Accepted → Complete)</li>
+            <li>Improved mobile responsiveness for quest interface</li>
+            <li>Optimized quest progress calculation performance</li>
+          </ul>
         </div>
         
         <div class="card">
-          <h3>🚀 Version 1.0.0 - Launch Update</h3>
+          <h3>🛒 Version 1.3.0 - Market & Shop Overhaul</h3>
+          <div class="text-muted" style="margin-bottom: 1rem;">September 22, 2025</div>
+          
+          <h4>✨ New Features:</h4>
+          <ul>
+            <li>Multiplayer-ready market system with API integration</li>
+            <li>Streamlined shop with starter items only</li>
+            <li>Compact shop interface with 4-column grid</li>
+            <li>Market trading tabs (Browse, Sell, Orders, History)</li>
+            <li>Dynamic pricing and seller simulation</li>
+            <li>Item quantity selection and bulk purchasing</li>
+          </ul>
+          
+          <h4>🛠️ Improvements:</h4>
+          <ul>
+            <li>Removed high-tier items from shop (now craftable only)</li>
+            <li>Enhanced inventory management with detail panel</li>
+            <li>Improved coin display in header</li>
+            <li>Fixed farming XP and seed consumption bugs</li>
+            <li>Added proper coin formatting (1 coin vs 5 coins)</li>
+          </ul>
+        </div>
+        
+        <div class="card">
+          <h3>⚔️ Version 1.2.0 - Combat & Equipment System</h3>
           <div class="text-muted" style="margin-bottom: 1rem;">September 21, 2025</div>
           
           <h4>✨ New Features:</h4>
+          <ul>
+            <li>Complete equipment system with 8 equipment slots</li>
+            <li>Real-time tick-based combat system</li>
+            <li>12 new monsters with varying difficulty levels</li>
+            <li>Combat animations and visual effects</li>
+            <li>Equipment stat bonuses and level requirements</li>
+            <li>Side-by-side battle arena layout</li>
+            <li>Monster defeat tracking and loot system</li>
+          </ul>
+          
+          <h4>🛠️ Improvements:</h4>
+          <ul>
+            <li>Fixed combat HP real-time updates</li>
+            <li>Added monster images and combat animations</li>
+            <li>Enhanced equipment interface with compact design</li>
+            <li>Improved combat skill page layout</li>
+            <li>Added equipment stat aggregation system</li>
+          </ul>
+        </div>
+        
+        <div class="card">
+          <h3>🎨 Version 1.1.0 - UI/UX Improvements</h3>
+          <div class="text-muted" style="margin-bottom: 1rem;">September 20, 2025</div>
+          
+          <h4>✨ New Features:</h4>
+          <ul>
+            <li>Dark theme implementation</li>
+            <li>Header action timer for all activities</li>
+            <li>Bottom-right notification system</li>
+            <li>Improved inventory with item detail panel</li>
+            <li>Enhanced scroll position preservation</li>
+            <li>Compact shop and market interfaces</li>
+          </ul>
+          
+          <h4>🛠️ Improvements:</h4>
+          <ul>
+            <li>Fixed farming XP and seed consumption issues</li>
+            <li>Improved inventory management controls</li>
+            <li>Enhanced mobile responsiveness</li>
+            <li>Added proper coin display and formatting</li>
+            <li>Optimized page navigation performance</li>
+          </ul>
+        </div>
+        
+        <div class="card">
+          <h3>🚀 Version 1.0.0 - Initial Launch</h3>
+          <div class="text-muted" style="margin-bottom: 1rem;">September 19, 2025</div>
+          
+          <h4>✨ Core Features:</h4>
           <ul>
             <li>Complete skill system with 13+ skills</li>
             <li>OSRS-style XP system and leveling</li>
@@ -2251,19 +6866,19 @@ class BMTIdle {
             <li>Skill interconnections and resource chains</li>
             <li>Player authentication and profiles</li>
             <li>Inventory management system</li>
-            <li>Daily quest system</li>
-            <li>Combat training against monsters</li>
-            <li>Shop system for buying essential items</li>
+            <li>Basic combat training system</li>
+            <li>Shop system for essential items</li>
             <li>Player housing framework</li>
             <li>Leaderboard system</li>
           </ul>
           
-          <h4>🛠️ Technical:</h4>
+          <h4>🛠️ Technical Foundation:</h4>
           <ul>
             <li>Single-page application architecture</li>
             <li>Local storage for offline play</li>
             <li>Responsive design for all devices</li>
             <li>OSRS-inspired visual theme</li>
+            <li>Modular code structure</li>
           </ul>
         </div>
         
@@ -2271,16 +6886,16 @@ class BMTIdle {
           <h3>🔮 Upcoming Features</h3>
           <div class="text-muted" style="margin-bottom: 1rem;">Coming Soon</div>
           
-          <h4>🎯 Next Update:</h4>
+          <h4>🎯 Next Update (v1.5.0):</h4>
           <ul>
-            <li>Advanced combat system with equipment</li>
+            <li>Guild system with multiplayer features</li>
+            <li>Advanced housing customization</li>
+            <li>Enhanced leaderboard system</li>
             <li>Player vs Player combat</li>
-            <li>Guild system and multiplayer features</li>
-            <li>Market trading between players</li>
-            <li>Achievement system</li>
-            <li>Idle/offline progression</li>
-            <li>House customization and furniture</li>
-            <li>More skills and content</li>
+            <li>More quest types and storylines</li>
+            <li>Idle/offline progression improvements</li>
+            <li>Additional skills and content</li>
+            <li>Performance optimizations</li>
           </ul>
         </div>
       </div>
@@ -2300,7 +6915,7 @@ class BMTIdle {
       this.stopTraining();
     }
     
-    // Start new 8-hour training session
+    // Start new 24-hour training session
     const startTime = Date.now();
     this.currentUser.currentTraining = {
       skill: skillId,
@@ -2310,11 +6925,11 @@ class BMTIdle {
       xpRate: xpGain,
       actionTime: actionTime, // Time per action in milliseconds
       startTime: startTime,
-      duration: 8 * 60 * 60 * 1000, // 8 hours
+      duration: 24 * 60 * 60 * 1000, // 24 hours
       lastAction: startTime // Start at exact same time so timer starts at 0
     };
     
-    this.showNotification(`Started training ${this.gameData.skills[skillId].name} for 8 hours!`);
+    this.showNotification(`Started training ${this.gameData.skills[skillId].name} for 24 hours!`);
     this.saveUserData();
     this.render();
   }
@@ -2336,7 +6951,7 @@ class BMTIdle {
     
     // Check if training duration is complete
     if (now >= training.startTime + training.duration) {
-      this.showNotification(`8-hour ${training.skill === 'combat' ? 'Combat' : this.gameData.skills[training.skill].name} training completed!`);
+      this.showNotification(`24-hour ${training.skill === 'combat' ? 'Combat' : this.gameData.skills[training.skill].name} training completed!`);
       delete this.currentUser.currentTraining;
       this.saveUserData();
       this.render();
@@ -2373,12 +6988,26 @@ class BMTIdle {
         // Add XP for this action
         this.currentUser.skills[training.skill].xp += training.xpRate;
         
-        // Add items for this action
+        // Add items for this action with efficiency bonuses
         if (training.itemReward) {
-          // Default: 1 item per action (efficiency bonuses will be added later with gear)
-          const itemsThisAction = 1;
+          // Base items: 1 per action
+          let itemsThisAction = 1;
+          
+          // Apply house efficiency bonuses
+          const houseBonuses = this.getHouseBonuses();
+          houseBonuses.forEach(bonus => {
+            if (bonus.type === 'all' || bonus.type === training.skill) {
+              if (Math.random() < (bonus.efficiency || 0) / 100) {
+                itemsThisAction++; // Double loot chance
+              }
+            }
+          });
+          
           this.currentUser.inventory[training.itemReward] = (this.currentUser.inventory[training.itemReward] || 0) + itemsThisAction;
         }
+        
+        // Track quest progress
+        this.trackQuestProgress(training.skill, 1);
         
         actualActionsProcessed++;
       }
@@ -2640,7 +7269,7 @@ class BMTIdle {
       monster: monsterId,
       actionTime: this.getPlayerAttackSpeed(), // Player's attack speed
       startTime: startTime,
-      duration: 8 * 60 * 60 * 1000, // 8 hours
+      duration: 24 * 60 * 60 * 1000, // 24 hours
       lastAction: startTime // Start at exact same time so timer starts at 0
     };
     
@@ -2868,7 +7497,10 @@ class BMTIdle {
     
     // Give loot
     const coinReward = Math.floor(Math.random() * (monster.loot.coins.max - monster.loot.coins.min + 1)) + monster.loot.coins.min;
-    this.currentUser.inventory.coins = (this.currentUser.inventory.coins || 0) + coinReward;
+    this.addCoins(coinReward);
+    
+    // Track quest progress
+    this.trackQuestProgress('combat', 1);
     
     // Check for level ups
     ['attack', 'strength', 'defence', 'hitpoints'].forEach(skill => {
@@ -2941,15 +7573,15 @@ class BMTIdle {
 
   // Give starting equipment to existing users who don't have any
   giveStartingEquipment() {
-    const hasEquipment = this.currentUser.inventory.bronze_sword || 
-                        this.currentUser.inventory.bronze_helmet || 
-                        this.currentUser.inventory.bronze_platebody;
+    const hasEquipment = this.currentUser.inventory.copper_sword || 
+                        this.currentUser.inventory.copper_helmet || 
+                        this.currentUser.inventory.copper_platebody;
     
     if (!hasEquipment) {
       console.log('Giving starting equipment to user');
-      this.currentUser.inventory.bronze_sword = 1;
-      this.currentUser.inventory.bronze_helmet = 1;
-      this.currentUser.inventory.bronze_platebody = 1;
+      this.currentUser.inventory.copper_sword = 1;
+      this.currentUser.inventory.copper_helmet = 1;
+      this.currentUser.inventory.copper_platebody = 1;
       this.currentUser.inventory.gold_necklace = 1;
       this.currentUser.inventory.gold_ring = 1;
       this.currentUser.inventory.cape = 1;
@@ -3091,7 +7723,7 @@ class BMTIdle {
     }
     
     // Add coins - ensure coins property exists
-    this.currentUser.inventory.coins = (this.currentUser.inventory.coins || 0) + totalSellPrice;
+    this.addCoins(totalSellPrice);
     
     console.log(`Coins after: ${this.currentUser.inventory.coins}`);
     
@@ -3238,10 +7870,20 @@ class BMTIdle {
   getItemIcon(itemId) {
     // Use SVG images for items that have them, fallback to emojis
     const svgItems = {
-      // Equipment
-      bronze_sword: 'images/items/bronze_sword.svg',
-      bronze_helmet: 'images/items/bronze_helmet.svg',
-      bronze_platebody: 'images/items/bronze_platebody.svg',
+      // Equipment - Copper Items
+      copper_sword: 'images/items/copper_sword.svg',
+      copper_helmet: 'images/items/copper_helmet.svg',
+      copper_platebody: 'images/items/copper_platebody.svg',
+      copper_platelegs: 'images/items/copper_platelegs.svg',
+      copper_boots: 'images/items/copper_boots.svg',
+      copper_gloves: 'images/items/copper_gloves.svg',
+      
+      // Tools - Copper Items
+      copper_pickaxe: 'images/items/copper_pickaxe.svg',
+      copper_axe: 'images/items/copper_axe.svg',
+      copper_fishing_rod: 'images/items/copper_fishing_rod.svg',
+      
+      // Jewelry
       gold_ring: 'images/items/gold_ring.svg',
       gold_necklace: 'images/items/gold_necklace.svg',
       cape: 'images/items/cape.svg',
@@ -3272,6 +7914,17 @@ class BMTIdle {
     
     // Fallback to emojis for items without SVG images
     const icons = {
+      // Copper Equipment
+      copper_sword: '⚔️',
+      copper_helmet: '⛑️',
+      copper_platebody: '🛡️',
+      copper_platelegs: '🦵',
+      copper_boots: '👢',
+      copper_gloves: '🧤',
+      copper_pickaxe: '⛏️',
+      copper_axe: '🪓',
+      copper_fishing_rod: '🎣',
+      
       // Logs
       oak_logs: '🪵', willow_logs: '🪵', yew_logs: '🌲', magic_logs: '✨',
       
@@ -3544,18 +8197,6 @@ class BMTIdle {
     }, 100);
     
     // Passive resource generation every minute
-    setInterval(() => {
-      if (this.currentUser) {
-        // Small passive gains based of total level
-        const totalLevel = Object.values(this.currentUser.skills).reduce((sum, skill) => sum + skill.level, 0);
-        const passiveCoins = Math.floor(totalLevel / 10);
-        
-        if (passiveCoins > 0) {
-          this.currentUser.inventory.coins += passiveCoins;
-          this.saveUserData();
-        }
-      }
-    }, 60000);
   }
 
   updateRealTimeUI() {
@@ -3747,7 +8388,10 @@ class BMTIdle {
       // Navigation
       if (e.target.matches('[data-page]')) {
         e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
         this.navigateTo(e.target.dataset.page);
+        return false;
       }
       
       // Auth forms
@@ -3930,16 +8574,56 @@ class BMTIdle {
 
   renderEquippedItem(itemId) {
     const itemData = this.gameData.items[itemId];
-    if (!itemData) return '<div class="empty-slot">Error</div>';
+    if (!itemData) {
+      // Handle bronze to copper migration
+      const bronzeToCopper = {
+        'bronze_helmet': 'copper_helmet',
+        'bronze_platebody': 'copper_platebody',
+        'bronze_sword': 'copper_sword',
+        'bronze_shield': 'copper_shield',
+        'bronze_legs': 'copper_legs',
+        'bronze_boots': 'copper_boots',
+        'bronze_gloves': 'copper_gloves'
+      };
+      
+      const newItemId = bronzeToCopper[itemId];
+      if (newItemId && this.gameData.items[newItemId]) {
+        // Update the equipped item to the new copper version
+        const slot = this.findEquippedSlot(itemId);
+        if (slot) {
+          this.currentUser.equipment[slot] = newItemId;
+          this.saveUserData();
+          return this.renderEquippedItem(newItemId);
+        }
+      }
+      
+      // If no migration found, unequip the item
+      const slot = this.findEquippedSlot(itemId);
+      if (slot) {
+        this.currentUser.equipment[slot] = null;
+        this.saveUserData();
+      }
+      return this.renderEmptySlot(slot || 'unknown');
+    }
     
     return `
       <div class="equipped-item">
         <div class="item-icon">${this.getItemIcon(itemId)}</div>
         <div class="item-name">${itemData.name}</div>
         <div class="item-level">Lv.${itemData.level}</div>
-        <button class="btn btn-danger btn-small" onclick="game.unequipItem('${itemId}')" style="margin-top: 4px;">Unequip</button>
+        <button class="btn btn-danger btn-small unequip-btn" onclick="game.unequipItem('${itemId}')">✕</button>
       </div>
     `;
+  }
+
+  findEquippedSlot(itemId) {
+    const equipment = this.currentUser.equipment;
+    for (const [slot, equippedItem] of Object.entries(equipment)) {
+      if (equippedItem === itemId) {
+        return slot;
+      }
+    }
+    return null;
   }
 
   renderEmptySlot(slot) {
@@ -4049,6 +8733,1069 @@ class BMTIdle {
     this.saveUserData();
     this.render();
     this.showNotification(`Unequipped ${itemData.name}!`);
+  }
+
+  renderGeneralAchievements() {
+    const achievements = this.getGeneralAchievements();
+    
+    return `
+      <div class="achievement-grid">
+        ${achievements.map(achievement => this.renderAchievementCard(achievement)).join('')}
+      </div>
+    `;
+  }
+
+  renderSkillAchievements() {
+    const achievements = this.getSkillAchievements();
+    
+    return `
+      <div class="achievement-grid">
+        ${achievements.map(achievement => this.renderAchievementCard(achievement)).join('')}
+      </div>
+    `;
+  }
+
+  renderCombatAchievements() {
+    const achievements = this.getCombatAchievements();
+    
+    return `
+      <div class="achievement-grid">
+        ${achievements.map(achievement => this.renderAchievementCard(achievement)).join('')}
+      </div>
+    `;
+  }
+
+  renderHouseAchievements() {
+    const achievements = this.getHouseAchievements();
+    
+    return `
+      <div class="achievement-grid">
+        ${achievements.map(achievement => this.renderAchievementCard(achievement)).join('')}
+      </div>
+    `;
+  }
+
+  renderGuildAchievements() {
+    const achievements = this.getGuildAchievements();
+    
+    return `
+      <div class="achievement-grid">
+        ${achievements.map(achievement => this.renderAchievementCard(achievement)).join('')}
+      </div>
+    `;
+  }
+
+  getGeneralAchievements() {
+    const totalLevel = Object.values(this.currentUser.skills).reduce((sum, skill) => sum + skill.level, 0);
+    const totalXP = Object.values(this.currentUser.skills).reduce((sum, skill) => sum + skill.xp, 0);
+    const totalCoins = this.currentUser.inventory.coins || 0;
+    
+    return [
+      {
+        id: 'first_login',
+        name: '🌟 First Steps',
+        description: 'Log in for the first time',
+        requirement: 'Complete account creation',
+        completed: true,
+        reward: { coins: 100, xp: 50 }
+      },
+      {
+        id: 'level_10',
+        name: '📈 Rising Star',
+        description: 'Reach total level 10',
+        requirement: 'Total level: 10',
+        completed: totalLevel >= 10,
+        reward: { coins: 500, xp: 200 }
+      },
+      {
+        id: 'level_50',
+        name: '⭐ Skilled Player',
+        description: 'Reach total level 50',
+        requirement: 'Total level: 50',
+        completed: totalLevel >= 50,
+        reward: { coins: 2000, xp: 1000 }
+      },
+      {
+        id: 'level_100',
+        name: '🏆 Master Player',
+        description: 'Reach total level 100',
+        requirement: 'Total level: 100',
+        completed: totalLevel >= 100,
+        reward: { coins: 5000, xp: 2500 }
+      },
+      {
+        id: 'first_1000_xp',
+        name: '💪 Experience Gainer',
+        description: 'Gain 1,000 total XP',
+        requirement: 'Total XP: 1,000',
+        completed: totalXP >= 1000,
+        reward: { coins: 300, xp: 150 }
+      },
+      {
+        id: 'first_10000_xp',
+        name: '🎯 XP Hunter',
+        description: 'Gain 10,000 total XP',
+        requirement: 'Total XP: 10,000',
+        completed: totalXP >= 10000,
+        reward: { coins: 1500, xp: 750 }
+      },
+      {
+        id: 'first_1000_coins',
+        name: '💰 Coin Collector',
+        description: 'Earn 1,000 coins',
+        requirement: 'Total coins: 1,000',
+        completed: totalCoins >= 1000,
+        reward: { coins: 200, xp: 100 }
+      },
+      {
+        id: 'first_10000_coins',
+        name: '💎 Wealthy Player',
+        description: 'Earn 10,000 coins',
+        requirement: 'Total coins: 10,000',
+        completed: totalCoins >= 10000,
+        reward: { coins: 1000, xp: 500 }
+      }
+    ];
+  }
+
+  getSkillAchievements() {
+    const skills = this.currentUser.skills;
+    
+    return [
+      {
+        id: 'first_skill_level_10',
+        name: '⚡ Skillful',
+        description: 'Reach level 10 in any skill',
+        requirement: 'Any skill level: 10',
+        completed: Object.values(skills).some(skill => skill.level >= 10),
+        reward: { coins: 300, xp: 150 }
+      },
+      {
+        id: 'first_skill_level_25',
+        name: '🎯 Expert',
+        description: 'Reach level 25 in any skill',
+        requirement: 'Any skill level: 25',
+        completed: Object.values(skills).some(skill => skill.level >= 25),
+        reward: { coins: 800, xp: 400 }
+      },
+      {
+        id: 'first_skill_level_50',
+        name: '🏅 Master',
+        description: 'Reach level 50 in any skill',
+        requirement: 'Any skill level: 50',
+        completed: Object.values(skills).some(skill => skill.level >= 50),
+        reward: { coins: 2000, xp: 1000 }
+      },
+      {
+        id: 'all_skills_level_10',
+        name: '🌟 Well-Rounded',
+        description: 'Reach level 10 in all skills',
+        requirement: 'All skills level: 10',
+        completed: Object.values(skills).every(skill => skill.level >= 10),
+        reward: { coins: 1500, xp: 750 }
+      },
+      {
+        id: 'woodcutting_level_20',
+        name: '🪓 Lumberjack',
+        description: 'Reach level 20 in Woodcutting',
+        requirement: 'Woodcutting level: 20',
+        completed: skills.woodcutting?.level >= 20,
+        reward: { coins: 400, xp: 200 }
+      },
+      {
+        id: 'mining_level_20',
+        name: '⛏️ Miner',
+        description: 'Reach level 20 in Mining',
+        requirement: 'Mining level: 20',
+        completed: skills.mining?.level >= 20,
+        reward: { coins: 400, xp: 200 }
+      },
+      {
+        id: 'fishing_level_20',
+        name: '🎣 Angler',
+        description: 'Reach level 20 in Fishing',
+        requirement: 'Fishing level: 20',
+        completed: skills.fishing?.level >= 20,
+        reward: { coins: 400, xp: 200 }
+      },
+      {
+        id: 'farming_level_20',
+        name: '🌾 Farmer',
+        description: 'Reach level 20 in Farming',
+        requirement: 'Farming level: 20',
+        completed: skills.farming?.level >= 20,
+        reward: { coins: 400, xp: 200 }
+      }
+    ];
+  }
+
+  getCombatAchievements() {
+    const combatStats = this.currentUser.questProgress || {};
+    
+    return [
+      {
+        id: 'first_monster_kill',
+        name: '⚔️ First Blood',
+        description: 'Defeat your first monster',
+        requirement: 'Defeat 1 monster',
+        completed: (combatStats.monstersDefeated || 0) >= 1,
+        reward: { coins: 200, xp: 100 }
+      },
+      {
+        id: 'monster_killer_10',
+        name: '🗡️ Monster Slayer',
+        description: 'Defeat 10 monsters',
+        requirement: 'Defeat 10 monsters',
+        completed: (combatStats.monstersDefeated || 0) >= 10,
+        reward: { coins: 500, xp: 250 }
+      },
+      {
+        id: 'monster_killer_50',
+        name: '👹 Beast Hunter',
+        description: 'Defeat 50 monsters',
+        requirement: 'Defeat 50 monsters',
+        completed: (combatStats.monstersDefeated || 0) >= 50,
+        reward: { coins: 1500, xp: 750 }
+      },
+      {
+        id: 'monster_killer_100',
+        name: '🐉 Dragon Slayer',
+        description: 'Defeat 100 monsters',
+        requirement: 'Defeat 100 monsters',
+        completed: (combatStats.monstersDefeated || 0) >= 100,
+        reward: { coins: 3000, xp: 1500 }
+      },
+      {
+        id: 'first_combat',
+        name: '🥊 Fighter',
+        description: 'Complete your first combat training',
+        requirement: 'Complete 1 combat session',
+        completed: (combatStats.firstCombatCompleted || false),
+        reward: { coins: 150, xp: 75 }
+      },
+      {
+        id: 'combat_master',
+        name: '🥋 Combat Master',
+        description: 'Complete 25 combat training sessions',
+        requirement: 'Complete 25 combat sessions',
+        completed: (combatStats.combatSessions || 0) >= 25,
+        reward: { coins: 1000, xp: 500 }
+      }
+    ];
+  }
+
+  getGuildAchievements() {
+    const guildData = this.getGuildData();
+    
+    return [
+      {
+        id: 'first_guild',
+        name: '🏛️ Guild Member',
+        description: 'Join your first guild',
+        requirement: 'Join a guild',
+        completed: !!guildData.name,
+        reward: { coins: 300, xp: 150 }
+      },
+      {
+        id: 'guild_master',
+        name: '👑 Guild Master',
+        description: 'Create your own guild',
+        requirement: 'Create a guild',
+        completed: guildData.memberRank === 'Guild Master',
+        reward: { coins: 1000, xp: 500 }
+      },
+      {
+        id: 'guild_chat',
+        name: '💬 Social Butterfly',
+        description: 'Send your first guild message',
+        requirement: 'Send 1 guild message',
+        completed: (guildData.chatMessages || []).length > 0,
+        reward: { coins: 100, xp: 50 }
+      },
+      {
+        id: 'guild_event',
+        name: '🎯 Team Player',
+        description: 'Participate in a guild event',
+        requirement: 'Join 1 guild event',
+        completed: (guildData.eventsParticipated || 0) >= 1,
+        reward: { coins: 400, xp: 200 }
+      },
+      {
+        id: 'guild_hall_upgrade',
+        name: '🏰 Hall Upgrader',
+        description: 'Upgrade the guild hall',
+        requirement: 'Upgrade guild hall 1 time',
+        completed: (guildData.hallUpgrades || 0) >= 1,
+        reward: { coins: 600, xp: 300 }
+      }
+    ];
+  }
+
+  renderAchievementCard(achievement) {
+    const statusIcon = achievement.completed ? '✓' : '○';
+    const statusClass = achievement.completed ? 'achievement-completed' : '';
+    
+    return `
+      <div class="achievement-card ${statusClass}">
+        <div class="achievement-header">
+          <h3>${achievement.name}</h3>
+          <div class="achievement-status">${statusIcon}</div>
+        </div>
+        
+        <p class="achievement-description">${achievement.description}</p>
+        <div class="achievement-requirement">${achievement.requirement}</div>
+        
+        <div class="achievement-reward">
+          <strong>Reward:</strong>
+          ${achievement.reward.coins ? `<span class="reward-coins">+${this.formatCoins(achievement.reward.coins)}</span>` : ''}
+          ${achievement.reward.xp ? `<span class="reward-xp">+${achievement.reward.xp} XP</span>` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  showAchievementTab(tab) {
+    // Update tab buttons
+    document.querySelectorAll('[id^="achievement-tab-"]').forEach(btn => {
+      btn.className = 'btn btn-secondary';
+    });
+    document.getElementById(`achievement-tab-${tab}`).className = 'btn btn-primary';
+    
+    // Update content
+    const content = document.getElementById('achievement-content');
+    switch(tab) {
+      case 'general':
+        content.innerHTML = this.renderGeneralAchievements();
+        break;
+      case 'skills':
+        content.innerHTML = this.renderSkillAchievements();
+        break;
+      case 'combat':
+        content.innerHTML = this.renderCombatAchievements();
+        break;
+      case 'house':
+        content.innerHTML = this.renderHouseAchievements();
+        break;
+      case 'guild':
+        content.innerHTML = this.renderGuildAchievements();
+        break;
+    }
+  }
+
+  showSocialTab(tab) {
+    // Update tab buttons
+    document.querySelectorAll('[id^="social-tab-"]').forEach(btn => {
+      btn.className = 'btn btn-secondary';
+    });
+    document.getElementById(`social-tab-${tab}`).className = 'btn btn-primary';
+    
+    // Update content
+    const content = document.getElementById('social-content');
+    switch(tab) {
+      case 'chat':
+        content.innerHTML = this.renderGlobalChat();
+        break;
+      case 'friends':
+        content.innerHTML = this.renderFriendsList();
+        break;
+      case 'players':
+        content.innerHTML = this.renderPlayerSearch();
+        break;
+    }
+  }
+
+  // Particle Effect System
+  initParticleSystem() {
+    if (!this.particleContainer) {
+      this.particleContainer = document.createElement('div');
+      this.particleContainer.className = 'particle-container';
+      document.body.appendChild(this.particleContainer);
+    }
+  }
+
+  createParticle(text, type, x, y, options = {}) {
+    this.initParticleSystem();
+    
+    const particle = document.createElement('div');
+    particle.className = `particle ${type}`;
+    particle.textContent = text;
+    particle.style.left = x + 'px';
+    particle.style.top = y + 'px';
+    
+    // Add animation class based on type
+    switch(type) {
+      case 'coin':
+        particle.classList.add('animate-coinCollect');
+        break;
+      case 'xp':
+        particle.classList.add('animate-xpGain');
+        break;
+      case 'damage':
+        particle.classList.add('animate-damageNumber');
+        break;
+      case 'level-up':
+        particle.classList.add('animate-levelUp');
+        break;
+      case 'item':
+        particle.classList.add('animate-itemDrop');
+        break;
+    }
+    
+    this.particleContainer.appendChild(particle);
+    
+    // Remove particle after animation
+    setTimeout(() => {
+      if (particle.parentNode) {
+        particle.parentNode.removeChild(particle);
+      }
+    }, options.duration || 2000);
+  }
+
+  // Enhanced notification with animations
+  showNotification(message, type = 'info', duration = 3000) {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    
+    // Position notification at bottom right
+    notification.style.position = 'fixed';
+    notification.style.bottom = '20px';
+    notification.style.right = '20px';
+    notification.style.padding = '12px 20px';
+    notification.style.borderRadius = '8px';
+    notification.style.color = 'white';
+    notification.style.fontWeight = 'bold';
+    notification.style.zIndex = '10000';
+    notification.style.maxWidth = '300px';
+    notification.style.wordWrap = 'break-word';
+    notification.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
+    notification.style.border = '2px solid rgba(255, 255, 255, 0.2)';
+    
+    // Set background color based on type (solid colors)
+    switch(type) {
+      case 'success':
+        notification.style.backgroundColor = '#4caf50';
+        break;
+      case 'error':
+        notification.style.backgroundColor = '#f44336';
+        break;
+      case 'warning':
+        notification.style.backgroundColor = '#ff9800';
+        break;
+      case 'info':
+      default:
+        notification.style.backgroundColor = '#2196f3';
+        break;
+    }
+    
+    document.body.appendChild(notification);
+    
+    // Remove notification after duration
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.style.animation = 'fadeOut 0.3s ease-out forwards';
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+          }
+        }, 300);
+      }
+    }, duration);
+  }
+
+
+  showLevelUpEffect(skillId, newLevel) {
+    console.log(`Level up effect triggered for ${skillId} level ${newLevel}`);
+    
+    // Create level up particle
+    const skillName = this.gameData.skills[skillId]?.name || skillId;
+    this.createParticle(`LEVEL UP!`, 'level-up', window.innerWidth / 2, window.innerHeight / 2);
+    this.createParticle(`${skillName} ${newLevel}`, 'level-up', window.innerWidth / 2, window.innerHeight / 2 + 30);
+    
+    // Show notification
+    this.showNotification(`🎉 ${skillName} level up! Level ${newLevel}`, 'success', 4000);
+    
+    // Add glow effect to skill
+    const skillElement = document.querySelector(`[data-skill="${skillId}"]`);
+    if (skillElement) {
+      console.log(`Adding glow effect to skill element: ${skillId}`);
+      skillElement.classList.add('animate-glow');
+      setTimeout(() => {
+        skillElement.classList.remove('animate-glow');
+      }, 3000);
+    } else {
+      console.log(`Skill element not found: ${skillId}`);
+    }
+  }
+
+  // Enhanced combat with particle effects
+  processCombatTraining() {
+    if (!this.currentUser.currentTraining || this.currentUser.currentTraining.skill !== 'combat') return;
+    
+    const monster = this.currentUser.currentMonster;
+    if (!monster) return;
+    
+    const now = Date.now();
+    const timeSinceStart = now - this.currentUser.currentTraining.startTime;
+    const actionTime = monster.attackSpeed * 1000;
+    
+    // Calculate attacks
+    const totalPlayerAttacksSinceStart = Math.floor(timeSinceStart / actionTime);
+    const totalMonsterAttacksSinceStart = Math.floor(timeSinceStart / actionTime);
+    
+    const newPlayerAttacks = totalPlayerAttacksSinceStart - (this.currentUser.currentTraining.playerAttacksCompleted || 0);
+    const newMonsterAttacks = totalMonsterAttacksSinceStart - (this.currentUser.currentTraining.monsterAttacksCompleted || 0);
+    
+    const maxAttacks = Math.max(newPlayerAttacks, newMonsterAttacks);
+    
+    for (let i = 0; i < maxAttacks; i++) {
+      // Player attack
+      if (i < newPlayerAttacks) {
+        const damage = this.calculatePlayerDamage(monster);
+        monster.currentHp = Math.max(0, monster.currentHp - damage);
+        
+        // Create damage particle
+        this.createParticle(`-${damage}`, 'damage', 
+          window.innerWidth / 2 - 100, 
+          window.innerHeight / 2 - 50);
+        
+        if (monster.currentHp <= 0) {
+          this.onMonsterDefeated(monster);
+          return;
+        }
+      }
+      
+      // Monster attack
+      if (i < newMonsterAttacks) {
+        const damage = this.calculateMonsterDamage(monster);
+        this.currentUser.hp = Math.max(0, this.currentUser.hp - damage);
+        
+        // Create damage particle for player
+        this.createParticle(`-${damage}`, 'damage', 
+          window.innerWidth / 2 + 100, 
+          window.innerHeight / 2 - 50);
+        
+        if (this.currentUser.hp <= 0) {
+          this.stopTraining();
+          this.showNotification('💀 You died! Training stopped.', 'error');
+          return;
+        }
+      }
+    }
+    
+    // Update attack counts
+    this.currentUser.currentTraining.playerAttacksCompleted = totalPlayerAttacksSinceStart;
+    this.currentUser.currentTraining.monsterAttacksCompleted = totalMonsterAttacksSinceStart;
+  }
+
+  // Enhanced item collection with particles
+  addToInventory(itemId, quantity = 1) {
+    if (!this.canAddToInventory()) {
+      this.showNotification('Inventory full!', 'warning');
+      return false;
+    }
+    
+    this.currentUser.inventory[itemId] = (this.currentUser.inventory[itemId] || 0) + quantity;
+    
+    // Create item particle
+    const itemData = this.gameData.items[itemId];
+    if (itemData) {
+      this.createParticle(`+${quantity} ${itemData.name}`, 'item', 
+        window.innerWidth / 2, 
+        window.innerHeight / 2);
+    }
+    
+    this.saveUserData();
+    return true;
+  }
+
+  // Enhanced coin collection
+  addCoins(amount) {
+    this.currentUser.inventory.coins = (this.currentUser.inventory.coins || 0) + amount;
+    
+    // Create coin particle
+    this.createParticle(`+${this.formatCoins(amount)}`, 'coin', 
+      window.innerWidth / 2, 
+      window.innerHeight / 2);
+    
+    this.saveUserData();
+  }
+
+  // Add page transition animations
+  navigateTo(page) {
+    // Preserve scroll position
+    const scrollY = window.scrollY;
+    
+    this.currentPage = page;
+    
+    // Only update the main content, not the entire page
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+      mainContent.innerHTML = this.renderMainContent();
+      this.updateSidebarActiveStates();
+      
+      // Restore scroll position after content update
+      setTimeout(() => {
+        window.scrollTo(0, scrollY);
+      }, 0);
+    } else {
+      // Fallback to full render if main content not found
+      this.render();
+      setTimeout(() => {
+        window.scrollTo(0, scrollY);
+      }, 0);
+    }
+  }
+
+  // Add loading animation to buttons
+  addLoadingAnimation(element) {
+    element.classList.add('loading');
+    element.disabled = true;
+  }
+
+  removeLoadingAnimation(element) {
+    element.classList.remove('loading');
+    element.disabled = false;
+  }
+
+  // Theme Management
+  changeTheme(themeName) {
+    // Remove all existing theme classes
+    document.body.className = document.body.className.replace(/theme-\w+/g, '');
+    
+    // Add new theme class
+    if (themeName !== 'default') {
+      document.body.classList.add(`theme-${themeName}`);
+    }
+    
+    // Save theme preference
+    localStorage.setItem('bmt-idle-theme', themeName);
+    
+    // Show notification
+    this.showNotification(`🎨 Theme changed to ${themeName}`, 'success', 2000);
+  }
+
+  loadTheme() {
+    const savedTheme = localStorage.getItem('bmt-idle-theme') || 'default';
+    this.changeTheme(savedTheme);
+    
+    // Update theme selector if it exists
+    const themeSelector = document.getElementById('theme-selector');
+    if (themeSelector) {
+      themeSelector.value = savedTheme;
+    }
+  }
+
+  // Test function for level up effects
+  testLevelUp() {
+    console.log('Testing level up effect...');
+    this.showLevelUpEffect('attack', 5);
+    this.createParticle(`+100`, 'xp', window.innerWidth / 2, window.innerHeight / 2);
+    this.createParticle(`+50 coins`, 'coin', window.innerWidth / 2 + 100, window.innerHeight / 2);
+  }
+
+  // Social System Functions
+  renderGlobalChat() {
+    return `
+      <div class="chat-container">
+        <div class="chat-header">
+          <h3>💬 Global Chat</h3>
+          <div class="chat-stats">
+            <span class="online-count">👥 ${this.getOnlinePlayerCount()} online</span>
+          </div>
+        </div>
+        
+        <div class="chat-messages" id="chat-messages">
+          ${this.renderChatMessages()}
+        </div>
+        
+        <div class="chat-input-container">
+          <input 
+            type="text" 
+            id="chat-input" 
+            class="chat-input" 
+            placeholder="Type your message..." 
+            maxlength="200"
+            onkeypress="game.handleChatKeyPress(event)"
+            value="${this.chatInput}"
+          >
+          <button class="btn btn-primary" onclick="game.sendChatMessage()">
+            Send
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  renderChatMessages() {
+    if (this.chatMessages.length === 0) {
+      return `
+        <div class="chat-message system">
+          <span class="message-time">Welcome to Global Chat!</span>
+          <span class="message-text">Start a conversation with other players.</span>
+        </div>
+      `;
+    }
+    
+    return this.chatMessages.map(msg => `
+      <div class="chat-message ${msg.type}">
+        <span class="message-time">${msg.time}</span>
+        <span class="message-sender">${msg.sender}:</span>
+        <span class="message-text">${msg.text}</span>
+      </div>
+    `).join('');
+  }
+
+  renderFriendsList() {
+    return `
+      <div class="friends-container">
+        <div class="friends-header">
+          <h3>👥 Friends</h3>
+          <button class="btn btn-primary" onclick="game.showAddFriendModal()">
+            ➕ Add Friend
+          </button>
+        </div>
+        
+        <div class="friends-list">
+          ${this.renderFriends()}
+        </div>
+      </div>
+    `;
+  }
+
+  renderFriends() {
+    if (this.friends.length === 0) {
+      return `
+        <div class="empty-state">
+          <div class="empty-icon">👥</div>
+          <h4>No friends yet</h4>
+          <p>Add some friends to see their progress and chat with them!</p>
+          <button class="btn btn-primary" onclick="game.showAddFriendModal()">
+            Find Friends
+          </button>
+        </div>
+      `;
+    }
+    
+    return this.friends.map(friend => `
+      <div class="friend-item">
+        <div class="friend-avatar">${friend.avatar || '👤'}</div>
+        <div class="friend-info">
+          <div class="friend-name">${friend.name}</div>
+          <div class="friend-status ${friend.online ? 'online' : 'offline'}">
+            ${friend.online ? '🟢 Online' : '🔴 Offline'}
+          </div>
+          <div class="friend-level">Level ${friend.totalLevel}</div>
+        </div>
+        <div class="friend-actions">
+          <button class="btn btn-secondary" onclick="game.viewPlayerProfile('${friend.name}')">
+            👁️ View
+          </button>
+          <button class="btn btn-danger" onclick="game.removeFriend('${friend.name}')">
+            ❌ Remove
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  renderPlayerSearch() {
+    return `
+      <div class="player-search-container">
+        <div class="search-header">
+          <h3>🔍 Find Players</h3>
+          <div class="search-box">
+            <input 
+              type="text" 
+              id="player-search-input" 
+              class="search-input" 
+              placeholder="Search by username..." 
+              onkeyup="game.searchPlayers(this.value)"
+            >
+            <button class="btn btn-primary" onclick="game.searchPlayers(document.getElementById('player-search-input').value)">
+              🔍 Search
+            </button>
+          </div>
+        </div>
+        
+        <div class="search-results" id="search-results">
+          ${this.renderSearchResults()}
+        </div>
+      </div>
+    `;
+  }
+
+  renderSearchResults() {
+    // Sample search results for demo
+    const samplePlayers = [
+      { name: 'DragonSlayer', level: 45, guild: 'Knights of Valor', online: true },
+      { name: 'MiningKing', level: 32, guild: 'Resource Masters', online: false },
+      { name: 'FishingPro', level: 28, guild: null, online: true },
+      { name: 'CombatMaster', level: 67, guild: 'Elite Warriors', online: true }
+    ];
+    
+    return samplePlayers.map(player => `
+      <div class="search-result-item">
+        <div class="player-avatar">👤</div>
+        <div class="player-info">
+          <div class="player-name">${player.name}</div>
+          <div class="player-details">
+            <span class="player-level">Level ${player.level}</span>
+            ${player.guild ? `<span class="player-guild">🏛️ ${player.guild}</span>` : ''}
+            <span class="player-status ${player.online ? 'online' : 'offline'}">
+              ${player.online ? '🟢 Online' : '🔴 Offline'}
+            </span>
+          </div>
+        </div>
+        <div class="player-actions">
+          <button class="btn btn-secondary" onclick="game.viewPlayerProfile('${player.name}')">
+            👁️ View Profile
+          </button>
+          <button class="btn btn-primary" onclick="game.addFriend('${player.name}')">
+            ➕ Add Friend
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // Chat Functions
+  handleChatKeyPress(event) {
+    if (event.key === 'Enter') {
+      this.sendChatMessage();
+    }
+  }
+
+  sendChatMessage() {
+    const input = document.getElementById('chat-input');
+    const message = input.value.trim();
+    
+    if (message.length === 0) return;
+    
+    const chatMessage = {
+      type: 'player',
+      sender: this.currentUser.username,
+      text: message,
+      time: new Date().toLocaleTimeString()
+    };
+    
+    this.chatMessages.push(chatMessage);
+    this.chatInput = '';
+    input.value = '';
+    
+    // Keep only last 50 messages
+    if (this.chatMessages.length > 50) {
+      this.chatMessages = this.chatMessages.slice(-50);
+    }
+    
+    this.render();
+    this.scrollChatToBottom();
+  }
+
+  scrollChatToBottom() {
+    const chatMessages = document.getElementById('chat-messages');
+    if (chatMessages) {
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+  }
+
+  // Friend Functions
+  addFriend(username) {
+    if (this.friends.find(f => f.name === username)) {
+      this.showNotification('Already friends with this player!', 'warning');
+      return;
+    }
+    
+    // In multiplayer, this would send a friend request
+    // For now, we'll add them directly
+    this.friends.push({
+      name: username,
+      online: Math.random() > 0.5,
+      totalLevel: Math.floor(Math.random() * 50) + 10,
+      avatar: '👤'
+    });
+    
+    this.showNotification(`Added ${username} as a friend!`, 'success');
+    this.render();
+  }
+
+  removeFriend(username) {
+    this.friends = this.friends.filter(f => f.name !== username);
+    this.showNotification(`Removed ${username} from friends`, 'info');
+    this.render();
+  }
+
+  // Player Profile Functions
+  viewPlayerProfile(username) {
+    this.selectedPlayer = username;
+    this.navigateTo('profile');
+  }
+
+  getOnlinePlayerCount() {
+    // In multiplayer, this would be real data
+    return Math.floor(Math.random() * 50) + 25;
+  }
+
+  searchPlayers(query) {
+    // In multiplayer, this would search the database
+    // For now, we'll just re-render the search results
+    this.render();
+  }
+
+  showAddFriendModal() {
+    const username = prompt('Enter username to add as friend:');
+    if (username && username.trim()) {
+      this.addFriend(username.trim());
+    }
+  }
+
+  // Other Player Profile Viewing
+  renderOtherPlayerProfile(username) {
+    // In multiplayer, this would fetch real player data
+    // For now, we'll show sample data
+    const samplePlayer = {
+      username: username,
+      totalLevel: Math.floor(Math.random() * 100) + 20,
+      combatLevel: Math.floor(Math.random() * 50) + 10,
+      guild: Math.random() > 0.3 ? 'Knights of Valor' : null,
+      joinDate: '2024-01-15',
+      lastSeen: Math.random() > 0.5 ? 'Online now' : '2 hours ago',
+      achievements: Math.floor(Math.random() * 50) + 10,
+      skills: {
+        woodcutting: { level: Math.floor(Math.random() * 50) + 10 },
+        mining: { level: Math.floor(Math.random() * 50) + 10 },
+        fishing: { level: Math.floor(Math.random() * 50) + 10 },
+        farming: { level: Math.floor(Math.random() * 50) + 10 },
+        smithing: { level: Math.floor(Math.random() * 50) + 10 },
+        attack: { level: Math.floor(Math.random() * 50) + 10 },
+        strength: { level: Math.floor(Math.random() * 50) + 10 },
+        defence: { level: Math.floor(Math.random() * 50) + 10 },
+        hitpoints: { level: Math.floor(Math.random() * 50) + 10 }
+      }
+    };
+
+    return `
+      <div class="card">
+        <div class="card-header">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <h2 class="card-title">👤 ${samplePlayer.username}</h2>
+              <div class="text-muted">Player Profile</div>
+            </div>
+            <button class="btn btn-secondary" onclick="game.selectedPlayer = null; game.navigateTo('profile')">
+              ← Back to My Profile
+            </button>
+          </div>
+        </div>
+        
+        <div class="grid grid-2">
+          <div class="card">
+            <div class="card-header">
+              <h3>📊 Player Stats</h3>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Username</label>
+              <div class="text-gold">${samplePlayer.username}</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Total Level</label>
+              <div class="text-gold">${samplePlayer.totalLevel}</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Combat Level</label>
+              <div class="text-gold">${samplePlayer.combatLevel}</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Guild</label>
+              <div class="text-gold">${samplePlayer.guild || 'No Guild'}</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Join Date</label>
+              <div class="text-muted">${samplePlayer.joinDate}</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Last Seen</label>
+              <div class="text-muted">${samplePlayer.lastSeen}</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Achievements</label>
+              <div class="text-gold">${samplePlayer.achievements} completed</div>
+            </div>
+          </div>
+          
+          <div class="card">
+            <div class="card-header">
+              <h3>⚡ Skill Levels</h3>
+            </div>
+            <div class="skills-grid">
+              ${Object.entries(samplePlayer.skills).map(([skillId, skill]) => `
+                <div class="skill-item">
+                  <div class="skill-icon">${this.gameData.skills[skillId]?.icon || '⚡'}</div>
+                  <div class="skill-info">
+                    <div class="skill-name">${this.gameData.skills[skillId]?.name || skillId}</div>
+                    <div class="skill-level">Level ${skill.level}</div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-header">
+            <h3>🏆 Recent Achievements</h3>
+          </div>
+          <div class="achievements-preview">
+            <div class="achievement-item">
+              <div class="achievement-icon">🎯</div>
+              <div class="achievement-info">
+                <div class="achievement-name">Skill Master</div>
+                <div class="achievement-desc">Reached level 50 in a skill</div>
+              </div>
+            </div>
+            <div class="achievement-item">
+              <div class="achievement-icon">⚔️</div>
+              <div class="achievement-info">
+                <div class="achievement-name">Combat Veteran</div>
+                <div class="achievement-desc">Defeated 100 monsters</div>
+              </div>
+            </div>
+            <div class="achievement-item">
+              <div class="achievement-icon">💰</div>
+              <div class="achievement-info">
+                <div class="achievement-name">Wealthy</div>
+                <div class="achievement-desc">Earned 10,000 coins</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-header">
+            <h3>👥 Social Actions</h3>
+          </div>
+          <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <button class="btn btn-primary" onclick="game.addFriend('${samplePlayer.username}')">
+              ➕ Add Friend
+            </button>
+            <button class="btn btn-secondary" onclick="game.sendPrivateMessage('${samplePlayer.username}')">
+              💬 Send Message
+            </button>
+            <button class="btn btn-secondary" onclick="game.viewPlayerGuild('${samplePlayer.username}')">
+              🏛️ View Guild
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  sendPrivateMessage(username) {
+    this.showNotification(`Private messaging to ${username} would be implemented in multiplayer mode`, 'info');
+  }
+
+  viewPlayerGuild(username) {
+    this.showNotification(`Viewing ${username}'s guild would be implemented in multiplayer mode`, 'info');
   }
 }
 
