@@ -37,6 +37,9 @@ class BMTIdle {
         this.currentPage = 'dashboard';
         console.log('BMT Idle: User loaded successfully:', this.currentUser.username);
         
+        // Ensure all skills are initialized for this user
+        this.ensureAllSkillsInitialized();
+        
         // Clean up any invalid training data
         if (this.currentUser.currentTraining && this.currentUser.currentTraining.skill === 'combat' && !this.currentUser.currentMonster) {
           console.log('BMT Idle: Cleaning up invalid combat training data');
@@ -105,7 +108,8 @@ class BMTIdle {
         ...defaultData, 
         ...savedData,
         items: this.getDefaultItems(), // Force fresh item data
-        monsters: this.getDefaultMonsters() // Force fresh monster data
+        monsters: this.getDefaultMonsters(), // Force fresh monster data
+        skills: this.getDefaultSkills() // Force fresh skills data
       };
     }
     return defaultData;
@@ -1151,6 +1155,12 @@ class BMTIdle {
             <a href="#" class="nav-item ${this.currentPage === 'equipment' ? 'active' : ''}" data-page="equipment">
               <span class="nav-item-icon">⚔️</span> Equipment
             </a>
+            <a href="#" class="nav-item ${this.currentPage === 'quests' ? 'active' : ''}" data-page="quests">
+              <span class="nav-item-icon">📜</span> Quests
+            </a>
+            <a href="#" class="nav-item ${this.currentPage === 'house' ? 'active' : ''}" data-page="house">
+              <span class="nav-item-icon">🏠</span> House
+            </a>
           </div>
 
           <div class="nav-section">
@@ -1176,8 +1186,14 @@ class BMTIdle {
             <a href="#" class="nav-item ${this.currentPage === 'cooking' ? 'active' : ''}" data-page="cooking">
               <span class="nav-item-icon">🍳</span> Cooking
             </a>
-            <a href="#" class="nav-item ${this.currentPage === 'alchemy' ? 'active' : ''}" data-page="alchemy">
-              <span class="nav-item-icon">⚗️</span> Alchemy
+            <a href="#" class="nav-item ${this.currentPage === 'herblore' ? 'active' : ''}" data-page="herblore">
+              <span class="nav-item-icon">⚗️</span> Herblore
+            </a>
+            <a href="#" class="nav-item ${this.currentPage === 'crafting' ? 'active' : ''}" data-page="crafting">
+              <span class="nav-item-icon">✂️</span> Crafting
+            </a>
+            <a href="#" class="nav-item ${this.currentPage === 'runecrafting' ? 'active' : ''}" data-page="runecrafting">
+              <span class="nav-item-icon">🔮</span> Runecrafting
             </a>
           </div>
 
@@ -1197,6 +1213,9 @@ class BMTIdle {
             </a>
             <a href="#" class="nav-item ${this.currentPage === 'magic' ? 'active' : ''}" data-page="magic">
               <span class="nav-item-icon">🔮</span> Magic
+            </a>
+            <a href="#" class="nav-item ${this.currentPage === 'hitpoints' ? 'active' : ''}" data-page="hitpoints">
+              <span class="nav-item-icon">❤️</span> Hitpoints
             </a>
           </div>
 
@@ -1228,12 +1247,6 @@ class BMTIdle {
 
           <div class="nav-section">
             <div class="nav-section-title">Other</div>
-            <a href="#" class="nav-item ${this.currentPage === 'quests' ? 'active' : ''}" data-page="quests">
-              <span class="nav-item-icon">📜</span> Quests
-            </a>
-            <a href="#" class="nav-item ${this.currentPage === 'house' ? 'active' : ''}" data-page="house">
-              <span class="nav-item-icon">🏠</span> House
-            </a>
             <a href="#" class="nav-item ${this.currentPage === 'changelog' ? 'active' : ''}" data-page="changelog">
               <span class="nav-item-icon">📋</span> Updates
             </a>
@@ -1269,8 +1282,12 @@ class BMTIdle {
         return this.renderSkillPage('smithing');
       case 'cooking':
         return this.renderSkillPage('cooking');
-      case 'alchemy':
-        return this.renderSkillPage('alchemy');
+      case 'herblore':
+        return this.renderSkillPage('herblore');
+      case 'crafting':
+        return this.renderSkillPage('crafting');
+      case 'runecrafting':
+        return this.renderSkillPage('runecrafting');
       case 'enchanting':
         return this.renderSkillPage('enchanting');
       case 'attack':
@@ -1679,6 +1696,15 @@ class BMTIdle {
     const skillData = this.gameData.skills[skillId];
     const userSkill = this.currentUser.skills[skillId];
     
+    
+    // Safety check
+    if (!skillData) {
+      console.error('BMT Idle: skillData is undefined for skillId:', skillId);
+      console.error('BMT Idle: Available skills:', Object.keys(this.gameData.skills));
+      console.error('BMT Idle: Full gameData.skills object:', this.gameData.skills);
+      return `<div class="card"><div class="card-header"><h2>Error: Skill "${skillId}" not found</h2></div></div>`;
+    }
+    
     return `
       <div class="card">
         <div class="card-header">
@@ -1718,7 +1744,7 @@ class BMTIdle {
       case 'woodcutting':
         return `
           <div class="skills-grid">
-            <div class="skill-card ${userSkill.level < 1 ? 'disabled-card' : ''}" onclick="game.trainSkill('woodcutting', 'logs', 15, 4000, 'Cutting Normal Trees')">
+            <div class="skill-card ${userSkill.level < 1 ? 'disabled-card' : ''}" onclick="game.trainSkill('woodcutting', 'logs', 15, 4000, 'Cutting Normal Trees', null, 1)">
               <div class="skill-header">
                 <div class="skill-icon">🌳</div>
                 <div class="skill-info">
@@ -1736,7 +1762,7 @@ class BMTIdle {
               <div class="skill-description">Basic woodcutting training</div>
             </div>
             
-            <div class="skill-card ${userSkill.level < 15 ? 'disabled-card' : ''}" onclick="game.trainSkill('woodcutting', 'oak_logs', 37.5, 5000, 'Cutting Oak Trees')">
+            <div class="skill-card ${userSkill.level < 15 ? 'disabled-card' : ''}" onclick="game.trainSkill('woodcutting', 'oak_logs', 37.5, 5000, 'Cutting Oak Trees', null, 15)">
               <div class="skill-header">
                 <div class="skill-icon">🌲</div>
                 <div class="skill-info">
@@ -1754,7 +1780,7 @@ class BMTIdle {
               <div class="skill-description">Harder wood, better XP</div>
             </div>
             
-            <div class="skill-card ${userSkill.level < 30 ? 'disabled-card' : ''}" onclick="game.trainSkill('woodcutting', 'willow_logs', 67.5, 6000, 'Cutting Willow Trees')">
+            <div class="skill-card ${userSkill.level < 30 ? 'disabled-card' : ''}" onclick="game.trainSkill('woodcutting', 'willow_logs', 67.5, 6000, 'Cutting Willow Trees', null, 30)">
               <div class="skill-header">
                 <div class="skill-icon">🌿</div>
                 <div class="skill-info">
@@ -1772,7 +1798,7 @@ class BMTIdle {
               <div class="skill-description">Fast-growing willow trees</div>
             </div>
             
-            <div class="skill-card ${userSkill.level < 60 ? 'disabled-card' : ''}" onclick="game.trainSkill('woodcutting', 'yew_logs', 175, 10000, 'Cutting Yew Trees')">
+            <div class="skill-card ${userSkill.level < 60 ? 'disabled-card' : ''}" onclick="game.trainSkill('woodcutting', 'yew_logs', 175, 10000, 'Cutting Yew Trees', null, 60)">
               <div class="skill-header">
                 <div class="skill-icon">🌳</div>
                 <div class="skill-info">
@@ -1790,7 +1816,7 @@ class BMTIdle {
               <div class="skill-description">Ancient and valuable wood</div>
             </div>
             
-            <div class="skill-card ${userSkill.level < 75 ? 'disabled-card' : ''}" onclick="game.trainSkill('woodcutting', 'magic_logs', 250, 15000, 'Cutting Magic Trees')">
+            <div class="skill-card ${userSkill.level < 75 ? 'disabled-card' : ''}" onclick="game.trainSkill('woodcutting', 'magic_logs', 250, 15000, 'Cutting Magic Trees', null, 75)">
               <div class="skill-header">
                 <div class="skill-icon">✨</div>
                 <div class="skill-info">
@@ -1813,7 +1839,7 @@ class BMTIdle {
       case 'mining':
         return `
           <div class="skills-grid">
-            <div class="skill-card ${userSkill.level < 1 ? 'disabled-card' : ''}" onclick="game.trainSkill('mining', 'copper_ore', 12, 5000, 'Mining Copper')">
+            <div class="skill-card ${userSkill.level < 1 ? 'disabled-card' : ''}" onclick="game.trainSkill('mining', 'copper_ore', 12, 5000, 'Mining Copper', null, 1)">
               <div class="skill-header">
                 <div class="skill-icon">🟤</div>
                 <div class="skill-info">
@@ -1831,7 +1857,7 @@ class BMTIdle {
               <div class="skill-description">Basic mining training</div>
             </div>
             
-            <div class="skill-card ${userSkill.level < 15 ? 'disabled-card' : ''}" onclick="game.trainSkill('mining', 'iron_ore', 35, 6000, 'Mining Iron')">
+            <div class="skill-card ${userSkill.level < 15 ? 'disabled-card' : ''}" onclick="game.trainSkill('mining', 'iron_ore', 35, 6000, 'Mining Iron', null, 15)">
               <div class="skill-header">
                 <div class="skill-icon">⚫</div>
                 <div class="skill-info">
@@ -1849,7 +1875,7 @@ class BMTIdle {
               <div class="skill-description">Strong metal ore</div>
             </div>
             
-            <div class="skill-card ${userSkill.level < 25 ? 'disabled-card' : ''}" onclick="game.trainSkill('mining', 'silver_ore', 50, 7000, 'Mining Silver')">
+            <div class="skill-card ${userSkill.level < 25 ? 'disabled-card' : ''}" onclick="game.trainSkill('mining', 'silver_ore', 50, 7000, 'Mining Silver', null, 25)">
               <div class="skill-header">
                 <div class="skill-icon">⚪</div>
                 <div class="skill-info">
@@ -1867,7 +1893,7 @@ class BMTIdle {
               <div class="skill-description">Precious metal ore</div>
             </div>
             
-            <div class="skill-card ${userSkill.level < 35 ? 'disabled-card' : ''}" onclick="game.trainSkill('mining', 'mithril_ore', 75, 8000, 'Mining Mithril')">
+            <div class="skill-card ${userSkill.level < 35 ? 'disabled-card' : ''}" onclick="game.trainSkill('mining', 'mithril_ore', 75, 8000, 'Mining Mithril', null, 35)">
               <div class="skill-header">
                 <div class="skill-icon">💎</div>
                 <div class="skill-info">
@@ -1885,7 +1911,7 @@ class BMTIdle {
               <div class="skill-description">Magical metal ore</div>
             </div>
             
-            <div class="skill-card ${userSkill.level < 45 ? 'disabled-card' : ''}" onclick="game.trainSkill('mining', 'gold_ore', 100, 9000, 'Mining Gold')">
+            <div class="skill-card ${userSkill.level < 45 ? 'disabled-card' : ''}" onclick="game.trainSkill('mining', 'gold_ore', 100, 9000, 'Mining Gold', null, 45)">
               <div class="skill-header">
                 <div class="skill-icon">🟡</div>
                 <div class="skill-info">
@@ -1903,7 +1929,7 @@ class BMTIdle {
               <div class="skill-description">Luxury metal ore</div>
             </div>
             
-            <div class="skill-card ${userSkill.level < 55 ? 'disabled-card' : ''}" onclick="game.trainSkill('mining', 'adamant_ore', 150, 10000, 'Mining Adamant')">
+            <div class="skill-card ${userSkill.level < 55 ? 'disabled-card' : ''}" onclick="game.trainSkill('mining', 'adamant_ore', 150, 10000, 'Mining Adamant', null, 55)">
               <div class="skill-header">
                 <div class="skill-icon">🔵</div>
                 <div class="skill-info">
@@ -1921,7 +1947,7 @@ class BMTIdle {
               <div class="skill-description">Elite metal ore</div>
             </div>
             
-            <div class="skill-card ${userSkill.level < 65 ? 'disabled-card' : ''}" onclick="game.trainSkill('mining', 'cobalt_ore', 200, 11000, 'Mining Cobalt')">
+            <div class="skill-card ${userSkill.level < 65 ? 'disabled-card' : ''}" onclick="game.trainSkill('mining', 'cobalt_ore', 200, 11000, 'Mining Cobalt', null, 65)">
               <div class="skill-header">
                 <div class="skill-icon">🔷</div>
                 <div class="skill-info">
@@ -1939,7 +1965,7 @@ class BMTIdle {
               <div class="skill-description">Rare metal ore</div>
             </div>
             
-            <div class="skill-card ${userSkill.level < 75 ? 'disabled-card' : ''}" onclick="game.trainSkill('mining', 'rune_ore', 275, 12000, 'Mining Rune')">
+            <div class="skill-card ${userSkill.level < 75 ? 'disabled-card' : ''}" onclick="game.trainSkill('mining', 'rune_ore', 275, 12000, 'Mining Rune', null, 75)">
               <div class="skill-header">
                 <div class="skill-icon">🔮</div>
                 <div class="skill-info">
@@ -1957,7 +1983,7 @@ class BMTIdle {
               <div class="skill-description">Mystical metal ore</div>
             </div>
             
-            <div class="skill-card ${userSkill.level < 85 ? 'disabled-card' : ''}" onclick="game.trainSkill('mining', 'astral_ore', 350, 13000, 'Mining Astral')">
+            <div class="skill-card ${userSkill.level < 85 ? 'disabled-card' : ''}" onclick="game.trainSkill('mining', 'astral_ore', 350, 13000, 'Mining Astral', null, 85)">
               <div class="skill-header">
                 <div class="skill-icon">✨</div>
                 <div class="skill-info">
@@ -1975,7 +2001,7 @@ class BMTIdle {
               <div class="skill-description">Cosmic metal ore</div>
             </div>
             
-            <div class="skill-card ${userSkill.level < 95 ? 'disabled-card' : ''}" onclick="game.trainSkill('mining', 'infernal_ore', 450, 14000, 'Mining Infernal')">
+            <div class="skill-card ${userSkill.level < 95 ? 'disabled-card' : ''}" onclick="game.trainSkill('mining', 'infernal_ore', 450, 14000, 'Mining Infernal', null, 95)">
               <div class="skill-header">
                 <div class="skill-icon">🔥</div>
                 <div class="skill-info">
@@ -1999,7 +2025,7 @@ class BMTIdle {
       case 'fishing':
         return `
           <div class="skills-grid">
-            <div class="skill-card ${userSkill.level < 1 ? 'disabled-card' : ''}" onclick="game.trainSkill('fishing', 'shrimp', 10, 5000, 'Catching Shrimp')">
+            <div class="skill-card ${userSkill.level < 1 ? 'disabled-card' : ''}" onclick="game.trainSkill('fishing', 'shrimp', 10, 5000, 'Catching Shrimp', null, 1)">
               <div class="skill-header">
                 <div class="skill-icon">🦐</div>
                 <div class="skill-info">
@@ -2017,7 +2043,7 @@ class BMTIdle {
               <div class="skill-description">Basic fishing training</div>
             </div>
             
-            <div class="skill-card ${userSkill.level < 5 ? 'disabled-card' : ''}" onclick="game.trainSkill('fishing', 'sardine', 20, 5000, 'Catching Sardines')">
+            <div class="skill-card ${userSkill.level < 5 ? 'disabled-card' : ''}" onclick="game.trainSkill('fishing', 'sardine', 20, 5000, 'Catching Sardines', null, 5)">
               <div class="skill-header">
                 <div class="skill-icon">🐟</div>
                 <div class="skill-info">
@@ -2035,7 +2061,7 @@ class BMTIdle {
               <div class="skill-description">Small but tasty fish</div>
             </div>
             
-            <div class="skill-card ${userSkill.level < 20 ? 'disabled-card' : ''}" onclick="game.trainSkill('fishing', 'trout', 50, 6000, 'Catching Trout')">
+            <div class="skill-card ${userSkill.level < 20 ? 'disabled-card' : ''}" onclick="game.trainSkill('fishing', 'trout', 50, 6000, 'Catching Trout', null, 20)">
               <div class="skill-header">
                 <div class="skill-icon">🐟</div>
                 <div class="skill-info">
@@ -2053,7 +2079,7 @@ class BMTIdle {
               <div class="skill-description">Freshwater fishing</div>
             </div>
             
-            <div class="skill-card ${userSkill.level < 30 ? 'disabled-card' : ''}" onclick="game.trainSkill('fishing', 'salmon', 70, 7000, 'Catching Salmon')">
+            <div class="skill-card ${userSkill.level < 30 ? 'disabled-card' : ''}" onclick="game.trainSkill('fishing', 'salmon', 70, 7000, 'Catching Salmon', null, 30)">
               <div class="skill-header">
                 <div class="skill-icon">🐟</div>
                 <div class="skill-info">
@@ -2071,7 +2097,7 @@ class BMTIdle {
               <div class="skill-description">Premium fish for cooking</div>
             </div>
             
-            <div class="skill-card ${userSkill.level < 40 ? 'disabled-card' : ''}" onclick="game.trainSkill('fishing', 'lobster', 90, 8000, 'Catching Lobsters')">
+            <div class="skill-card ${userSkill.level < 40 ? 'disabled-card' : ''}" onclick="game.trainSkill('fishing', 'lobster', 90, 8000, 'Catching Lobsters', null, 40)">
               <div class="skill-header">
                 <div class="skill-icon">🦞</div>
                 <div class="skill-info">
@@ -2089,7 +2115,7 @@ class BMTIdle {
               <div class="skill-description">Delicious and valuable</div>
             </div>
             
-            <div class="skill-card ${userSkill.level < 76 ? 'disabled-card' : ''}" onclick="game.trainSkill('fishing', 'shark', 110, 10000, 'Catching Sharks')">
+            <div class="skill-card ${userSkill.level < 76 ? 'disabled-card' : ''}" onclick="game.trainSkill('fishing', 'shark', 110, 10000, 'Catching Sharks', null, 76)">
               <div class="skill-header">
                 <div class="skill-icon">🦈</div>
                 <div class="skill-info">
@@ -2112,7 +2138,7 @@ class BMTIdle {
       case 'cooking':
         return `
           <div class="skills-grid">
-            <div class="skill-card ${userSkill.level < 1 ? 'disabled-card' : ''}" onclick="game.cookFood('shrimp', 'cooked_shrimp', 30, 2000)">
+            <div class="skill-card ${userSkill.level < 1 ? 'disabled-card' : ''}" onclick="game.trainCooking('shrimp', 'cooked_shrimp', 30, 2000, 'Cooking Shrimp', 1)">
               <div class="skill-header">
                 <div class="skill-icon">🍤</div>
                 <div class="skill-info">
@@ -2129,7 +2155,7 @@ class BMTIdle {
               </div>
               <div class="skill-description">Basic cooking training</div>
             </div>
-            <div class="skill-card ${userSkill.level < 1 ? 'disabled-card' : ''}" onclick="game.cookFood('wheat', 'bread', 40, 3000)">
+            <div class="skill-card ${userSkill.level < 1 ? 'disabled-card' : ''}" onclick="game.trainCooking('wheat', 'bread', 40, 3000, 'Baking Bread', 1)">
               <div class="skill-header">
                 <div class="skill-icon">🍞</div>
                 <div class="skill-info">
@@ -2146,7 +2172,7 @@ class BMTIdle {
               </div>
               <div class="skill-description">Simple bread baking</div>
             </div>
-            <div class="skill-card ${userSkill.level < 15 ? 'disabled-card' : ''}" onclick="game.cookFood('trout', 'cooked_trout', 70, 4000)">
+            <div class="skill-card ${userSkill.level < 15 ? 'disabled-card' : ''}" onclick="game.trainCooking('trout', 'cooked_trout', 70, 4000, 'Cooking Trout', 15)">
               <div class="skill-header">
                 <div class="skill-icon">🐟</div>
                 <div class="skill-info">
@@ -2163,7 +2189,7 @@ class BMTIdle {
               </div>
               <div class="skill-description">Freshwater fish cooking</div>
             </div>
-            <div class="skill-card ${userSkill.level < 25 ? 'disabled-card' : ''}" onclick="game.cookFood(['potato', 'carrot'], 'vegetable_stew', 60, 5000)">
+            <div class="skill-card ${userSkill.level < 25 ? 'disabled-card' : ''}" onclick="game.trainCooking(['potato', 'carrot'], 'vegetable_stew', 60, 5000, 'Making Vegetable Stew', 25)">
               <div class="skill-header">
                 <div class="skill-icon">🍲</div>
                 <div class="skill-info">
@@ -2180,7 +2206,7 @@ class BMTIdle {
               </div>
               <div class="skill-description">Hearty vegetable cooking</div>
             </div>
-            <div class="skill-card ${userSkill.level < 40 ? 'disabled-card' : ''}" onclick="game.cookFood(['cabbage', 'wheat'], 'cabbage_soup', 80, 6000)">
+            <div class="skill-card ${userSkill.level < 40 ? 'disabled-card' : ''}" onclick="game.trainCooking(['cabbage', 'wheat'], 'cabbage_soup', 80, 6000, 'Making Cabbage Soup', 40)">
               <div class="skill-header">
                 <div class="skill-icon">🥬</div>
                 <div class="skill-info">
@@ -2203,7 +2229,7 @@ class BMTIdle {
       case 'smelting':
         return `
           <div class="skills-grid">
-            <div class="skill-card" onclick="game.smeltBar(['copper_ore'], 'copper_bar', 6.25, 3000)">
+            <div class="skill-card ${userSkill.level < 1 ? 'disabled-card' : ''}" onclick="game.trainSmelting(['copper_ore'], 'copper_bar', 6.25, 3000, 'Smelting Copper Bars', 1)">
               <div class="skill-header">
                 <div class="skill-icon">🟤</div>
                 <div class="skill-info">
@@ -2220,7 +2246,7 @@ class BMTIdle {
               </div>
               <div class="skill-description">Basic smelting training</div>
             </div>
-            <div class="skill-card ${userSkill.level < 15 ? 'disabled-card' : ''}" onclick="game.smeltBar(['iron_ore'], 'iron_bar', 12.5, 4000)">
+            <div class="skill-card ${userSkill.level < 15 ? 'disabled-card' : ''}" onclick="game.trainSmelting(['iron_ore'], 'iron_bar', 12.5, 4000, 'Smelting Iron Bars', 15)">
               <div class="skill-header">
                 <div class="skill-icon">⚫</div>
                 <div class="skill-info">
@@ -2237,7 +2263,7 @@ class BMTIdle {
               </div>
               <div class="skill-description">Strong metal smelting</div>
             </div>
-            <div class="skill-card ${userSkill.level < 30 ? 'disabled-card' : ''}" onclick="game.smeltBar(['iron_ore', 'coal'], 'steel_bar', 17.5, 5000)">
+            <div class="skill-card ${userSkill.level < 30 ? 'disabled-card' : ''}" onclick="game.trainSmelting(['iron_ore', 'coal'], 'steel_bar', 17.5, 5000, 'Smelting Steel Bars', 30)">
               <div class="skill-header">
                 <div class="skill-icon">🔩</div>
                 <div class="skill-info">
@@ -2255,7 +2281,7 @@ class BMTIdle {
               <div class="skill-description">Advanced metal smelting</div>
             </div>
             
-            <div class="skill-card ${userSkill.level < 45 ? 'disabled-card' : ''}" onclick="game.smeltBar(['silver_ore'], 'silver_bar', 25, 6000)">
+            <div class="skill-card ${userSkill.level < 45 ? 'disabled-card' : ''}" onclick="game.trainSmelting(['silver_ore'], 'silver_bar', 25, 6000, 'Smelting Silver Bars', 45)">
               <div class="skill-header">
                 <div class="skill-icon">⚪</div>
                 <div class="skill-info">
@@ -2273,7 +2299,7 @@ class BMTIdle {
               <div class="skill-description">Precious metal smelting</div>
             </div>
             
-            <div class="skill-card ${userSkill.level < 60 ? 'disabled-card' : ''}" onclick="game.smeltBar(['mithril_ore'], 'mithril_bar', 35, 7000)">
+            <div class="skill-card ${userSkill.level < 60 ? 'disabled-card' : ''}" onclick="game.trainSmelting(['mithril_ore'], 'mithril_bar', 35, 7000, 'Smelting Mithril Bars', 60)">
               <div class="skill-header">
                 <div class="skill-icon">💎</div>
                 <div class="skill-info">
@@ -2291,7 +2317,7 @@ class BMTIdle {
               <div class="skill-description">Magical metal smelting</div>
             </div>
             
-            <div class="skill-card ${userSkill.level < 75 ? 'disabled-card' : ''}" onclick="game.smeltBar(['gold_ore'], 'gold_bar', 50, 8000)">
+            <div class="skill-card ${userSkill.level < 75 ? 'disabled-card' : ''}" onclick="game.trainSmelting(['gold_ore'], 'gold_bar', 50, 8000, 'Smelting Gold Bars', 75)">
               <div class="skill-header">
                 <div class="skill-icon">🟡</div>
                 <div class="skill-info">
@@ -2309,7 +2335,7 @@ class BMTIdle {
               <div class="skill-description">Luxury metal smelting</div>
             </div>
             
-            <div class="skill-card ${userSkill.level < 90 ? 'disabled-card' : ''}" onclick="game.smeltBar(['adamant_ore'], 'adamant_bar', 75, 9000)">
+            <div class="skill-card ${userSkill.level < 90 ? 'disabled-card' : ''}" onclick="game.trainSmelting(['adamant_ore'], 'adamant_bar', 75, 9000, 'Smelting Adamant Bars', 90)">
               <div class="skill-header">
                 <div class="skill-icon">🔵</div>
                 <div class="skill-info">
@@ -2333,7 +2359,7 @@ class BMTIdle {
         return `
           <div class="skills-grid">
             <!-- Weapons -->
-            <div class="skill-card" onclick="game.smithItem('copper_bar', 'copper_sword', 12.5, 4000)">
+            <div class="skill-card ${userSkill.level < 1 ? 'disabled-card' : ''}" onclick="game.trainSmithing(['copper_bar'], 'copper_sword', 12.5, 4000, 'Smithing Copper Swords', 1)">
               <div class="skill-header">
                 <div class="skill-icon">⚔️</div>
                 <div class="skill-info">
@@ -2350,7 +2376,7 @@ class BMTIdle {
               </div>
               <div class="skill-description">Basic weapon smithing</div>
             </div>
-            <div class="skill-card ${userSkill.level < 5 ? 'disabled-card' : ''}" onclick="game.smithItem('iron_bar', 'iron_sword', 25, 5000)">
+            <div class="skill-card ${userSkill.level < 5 ? 'disabled-card' : ''}" onclick="game.trainSmithing(['iron_bar'], 'iron_sword', 25, 5000, 'Smithing Iron Swords', 5)">
               <div class="skill-header">
                 <div class="skill-icon">⚔️</div>
                 <div class="skill-info">
@@ -2367,7 +2393,7 @@ class BMTIdle {
               </div>
               <div class="skill-description">Improved weapon smithing</div>
             </div>
-            <div class="skill-card ${userSkill.level < 10 ? 'disabled-card' : ''}" onclick="game.smithItem('steel_bar', 'steel_sword', 37.5, 6000)">
+            <div class="skill-card ${userSkill.level < 10 ? 'disabled-card' : ''}" onclick="game.trainSmithing(['steel_bar'], 'steel_sword', 37.5, 6000, 'Smithing Steel Swords', 10)">
               <div class="skill-header">
                 <div class="skill-icon">⚔️</div>
                 <div class="skill-info">
@@ -2386,65 +2412,109 @@ class BMTIdle {
             </div>
             
             <!-- Armor - Helmets -->
-            <div class="card">
-              <h3>Bronze Helmet</h3>
-              <p>Level 1 required</p>
-              <p>10 XP per helmet</p>
-              <p>Requires: Bronze Bar</p>
-              <button class="btn btn-primary" onclick="game.smithItem('bronze_bar', 'bronze_helmet', 10, 3000)">
-                Smith Bronze Helmet
-              </button>
+            <div class="skill-card ${userSkill.level < 1 ? 'disabled-card' : ''}" onclick="game.trainSmithing(['copper_bar'], 'copper_helmet', 10, 3000, 'Smithing Copper Helmets', 1)">
+              <div class="skill-header">
+                <div class="skill-icon">⛑️</div>
+                <div class="skill-info">
+                  <div class="skill-name">Copper Helmet</div>
+                  <div class="skill-level">Level 1+</div>
+                </div>
+                <div class="skill-xp">10 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">3s per helmet</div>
+              </div>
+              <div class="skill-description">Basic helmet smithing</div>
             </div>
-            <div class="card">
-              <h3>Iron Helmet</h3>
-              <p>Level 5 required</p>
-              <p>20 XP per helmet</p>
-              <p>Requires: Iron Bar</p>
-              <button class="btn btn-primary" ${userSkill.level < 5 ? 'disabled' : ''} 
-                onclick="game.smithItem('iron_bar', 'iron_helmet', 20, 4000)">
-                Smith Iron Helmet
-              </button>
+            <div class="skill-card ${userSkill.level < 5 ? 'disabled-card' : ''}" onclick="game.trainSmithing(['iron_bar'], 'iron_helmet', 20, 4000, 'Smithing Iron Helmets', 5)">
+              <div class="skill-header">
+                <div class="skill-icon">⛑️</div>
+                <div class="skill-info">
+                  <div class="skill-name">Iron Helmet</div>
+                  <div class="skill-level">Level 5+</div>
+                </div>
+                <div class="skill-xp">20 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">4s per helmet</div>
+              </div>
+              <div class="skill-description">Improved helmet smithing</div>
             </div>
-            <div class="card">
-              <h3>Steel Helmet</h3>
-              <p>Level 10 required</p>
-              <p>30 XP per helmet</p>
-              <p>Requires: Steel Bar</p>
-              <button class="btn btn-primary" ${userSkill.level < 10 ? 'disabled' : ''} 
-                onclick="game.smithItem('steel_bar', 'steel_helmet', 30, 5000)">
-                Smith Steel Helmet
-              </button>
+            <div class="skill-card ${userSkill.level < 10 ? 'disabled-card' : ''}" onclick="game.trainSmithing(['steel_bar'], 'steel_helmet', 30, 5000, 'Smithing Steel Helmets', 10)">
+              <div class="skill-header">
+                <div class="skill-icon">⛑️</div>
+                <div class="skill-info">
+                  <div class="skill-name">Steel Helmet</div>
+                  <div class="skill-level">Level 10+</div>
+                </div>
+                <div class="skill-xp">30 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">5s per helmet</div>
+              </div>
+              <div class="skill-description">Advanced helmet smithing</div>
             </div>
             
             <!-- Armor - Body -->
-            <div class="card">
-              <h3>Bronze Platebody</h3>
-              <p>Level 1 required</p>
-              <p>15 XP per platebody</p>
-              <p>Requires: Bronze Bar</p>
-              <button class="btn btn-primary" onclick="game.smithItem('bronze_bar', 'bronze_platebody', 15, 5000)">
-                Smith Bronze Platebody
-              </button>
+            <div class="skill-card ${userSkill.level < 1 ? 'disabled-card' : ''}" onclick="game.trainSmithing(['copper_bar'], 'copper_platebody', 15, 5000, 'Smithing Copper Platebodies', 1)">
+              <div class="skill-header">
+                <div class="skill-icon">🛡️</div>
+                <div class="skill-info">
+                  <div class="skill-name">Copper Platebody</div>
+                  <div class="skill-level">Level 1+</div>
+                </div>
+                <div class="skill-xp">15 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">5s per platebody</div>
+              </div>
+              <div class="skill-description">Basic armor smithing</div>
             </div>
-            <div class="card">
-              <h3>Iron Platebody</h3>
-              <p>Level 5 required</p>
-              <p>30 XP per platebody</p>
-              <p>Requires: Iron Bar</p>
-              <button class="btn btn-primary" ${userSkill.level < 5 ? 'disabled' : ''} 
-                onclick="game.smithItem('iron_bar', 'iron_platebody', 30, 6000)">
-                Smith Iron Platebody
-              </button>
+            <div class="skill-card ${userSkill.level < 5 ? 'disabled-card' : ''}" onclick="game.trainSmithing(['iron_bar'], 'iron_platebody', 30, 6000, 'Smithing Iron Platebodies', 5)">
+              <div class="skill-header">
+                <div class="skill-icon">🛡️</div>
+                <div class="skill-info">
+                  <div class="skill-name">Iron Platebody</div>
+                  <div class="skill-level">Level 5+</div>
+                </div>
+                <div class="skill-xp">30 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">6s per platebody</div>
+              </div>
+              <div class="skill-description">Improved armor smithing</div>
             </div>
-            <div class="card">
-              <h3>Steel Platebody</h3>
-              <p>Level 10 required</p>
-              <p>45 XP per platebody</p>
-              <p>Requires: Steel Bar</p>
-              <button class="btn btn-primary" ${userSkill.level < 10 ? 'disabled' : ''} 
-                onclick="game.smithItem('steel_bar', 'steel_platebody', 45, 7000)">
-                Smith Steel Platebody
-              </button>
+            <div class="skill-card ${userSkill.level < 10 ? 'disabled-card' : ''}" onclick="game.trainSmithing(['steel_bar'], 'steel_platebody', 45, 7000, 'Smithing Steel Platebodies', 10)">
+              <div class="skill-header">
+                <div class="skill-icon">🛡️</div>
+                <div class="skill-info">
+                  <div class="skill-name">Steel Platebody</div>
+                  <div class="skill-level">Level 10+</div>
+                </div>
+                <div class="skill-xp">45 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">7s per platebody</div>
+              </div>
+              <div class="skill-description">Advanced armor smithing</div>
             </div>
           </div>
         `;
@@ -2452,7 +2522,7 @@ class BMTIdle {
       case 'farming':
         return `
           <div class="skills-grid">
-            <div class="skill-card ${userSkill.level < 1 ? 'disabled-card' : ''}" onclick="game.trainSkill('farming', 'potato', 8, 30000, 'Growing Potatoes', 'potato_seed')">
+            <div class="skill-card ${userSkill.level < 1 ? 'disabled-card' : ''}" onclick="game.trainSkill('farming', 'potato', 8, 30000, 'Growing Potatoes', 'potato_seed', 1)">
               <div class="skill-header">
                 <div class="skill-icon">🥔</div>
                 <div class="skill-info">
@@ -2469,7 +2539,7 @@ class BMTIdle {
               </div>
               <div class="skill-description">Basic farming training</div>
             </div>
-            <div class="skill-card ${userSkill.level < 15 ? 'disabled-card' : ''}" onclick="game.trainSkill('farming', 'wheat', 17, 45000, 'Growing Wheat', 'wheat_seed')">
+            <div class="skill-card ${userSkill.level < 15 ? 'disabled-card' : ''}" onclick="game.trainSkill('farming', 'wheat', 17, 45000, 'Growing Wheat', 'wheat_seed', 15)">
               <div class="skill-header">
                 <div class="skill-icon">🌾</div>
                 <div class="skill-info">
@@ -2486,7 +2556,7 @@ class BMTIdle {
               </div>
               <div class="skill-description">For cooking bread & potions</div>
             </div>
-            <div class="skill-card ${userSkill.level < 25 ? 'disabled-card' : ''}" onclick="game.trainSkill('farming', 'herb', 25, 60000, 'Growing Herbs', 'herb_seed')">
+            <div class="skill-card ${userSkill.level < 25 ? 'disabled-card' : ''}" onclick="game.trainSkill('farming', 'herb', 25, 60000, 'Growing Herbs', 'herb_seed', 25)">
               <div class="skill-header">
                 <div class="skill-icon">🌿</div>
                 <div class="skill-info">
@@ -2503,7 +2573,7 @@ class BMTIdle {
               </div>
               <div class="skill-description">Essential for all potions</div>
             </div>
-            <div class="skill-card ${userSkill.level < 35 ? 'disabled-card' : ''}" onclick="game.trainSkill('farming', 'carrot', 35, 90000, 'Growing Carrots', 'carrot_seed')">
+            <div class="skill-card ${userSkill.level < 35 ? 'disabled-card' : ''}" onclick="game.trainSkill('farming', 'carrot', 35, 90000, 'Growing Carrots', 'carrot_seed', 35)">
               <div class="skill-header">
                 <div class="skill-icon">🥕</div>
                 <div class="skill-info">
@@ -2520,7 +2590,7 @@ class BMTIdle {
               </div>
               <div class="skill-description">Better healing food</div>
             </div>
-            <div class="skill-card ${userSkill.level < 50 ? 'disabled-card' : ''}" onclick="game.trainSkill('farming', 'cabbage', 50, 120000, 'Growing Cabbage', 'cabbage_seed')">
+            <div class="skill-card ${userSkill.level < 50 ? 'disabled-card' : ''}" onclick="game.trainSkill('farming', 'cabbage', 50, 120000, 'Growing Cabbage', 'cabbage_seed', 50)">
               <div class="skill-header">
                 <div class="skill-icon">🥬</div>
                 <div class="skill-info">
@@ -2540,10 +2610,10 @@ class BMTIdle {
           </div>
         `;
 
-      case 'alchemy':
+      case 'herblore':
         return `
           <div class="skills-grid">
-            <div class="skill-card ${userSkill.level < 1 ? 'disabled-card' : ''}" onclick="game.brewPotion(['herb', 'vial'], 'combat_xp_potion', 17.5, 5000)">
+            <div class="skill-card ${userSkill.level < 1 ? 'disabled-card' : ''}" onclick="game.trainAlchemy(['herb', 'vial'], 'combat_xp_potion', 17.5, 5000, 'Brewing Combat XP Potions', 1)">
               <div class="skill-header">
                 <div class="skill-icon">🧪</div>
                 <div class="skill-info">
@@ -2560,7 +2630,7 @@ class BMTIdle {
               </div>
               <div class="skill-description">+5% combat XP for 30 minutes</div>
             </div>
-            <div class="skill-card ${userSkill.level < 25 ? 'disabled-card' : ''}" onclick="game.brewPotion(['herb', 'potato', 'vial'], 'gathering_xp_potion', 37.5, 8000)">
+            <div class="skill-card ${userSkill.level < 25 ? 'disabled-card' : ''}" onclick="game.trainAlchemy(['herb', 'potato', 'vial'], 'gathering_xp_potion', 37.5, 8000, 'Brewing Gathering XP Potions', 25)">
               <div class="skill-header">
                 <div class="skill-icon">🧪</div>
                 <div class="skill-info">
@@ -2577,7 +2647,7 @@ class BMTIdle {
               </div>
               <div class="skill-description">+5% gathering XP for 30 minutes</div>
             </div>
-            <div class="skill-card ${userSkill.level < 50 ? 'disabled-card' : ''}" onclick="game.brewPotion(['herb', 'herb', 'wheat', 'vial'], 'production_xp_potion', 75, 12000)">
+            <div class="skill-card ${userSkill.level < 50 ? 'disabled-card' : ''}" onclick="game.trainAlchemy(['herb', 'herb', 'wheat', 'vial'], 'production_xp_potion', 75, 12000, 'Brewing Production XP Potions', 50)">
               <div class="skill-header">
                 <div class="skill-icon">🧪</div>
                 <div class="skill-info">
@@ -3026,44 +3096,226 @@ class BMTIdle {
       
       case 'crafting':
         return `
-          <div class="grid grid-3">
-            <div class="card ${userSkill.level < 1 ? 'disabled-card' : ''}">
-              <h3>Make Jewelry</h3>
-              <p>Level 1 required</p>
-              <p>18 XP per item (3s each)</p>
-              <button class="btn btn-primary" ${userSkill.level < 1 ? 'disabled' : ''} onclick="game.trainSkill('crafting', 'make_jewelry', 18, 3000, 'Making Jewelry')">
-                Make Jewelry
-              </button>
+          <div class="skills-grid">
+            <div class="skill-card ${userSkill.level < 1 ? 'disabled-card' : ''}" onclick="game.trainCrafting(['logs'], 'wooden_bow', 15, 4000, 'Crafting Wooden Bows', 1)">
+              <div class="skill-header">
+                <div class="skill-icon">🏹</div>
+                <div class="skill-info">
+                  <div class="skill-name">Wooden Bow</div>
+                  <div class="skill-level">Level 1+</div>
+                </div>
+                <div class="skill-xp">15 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">4s per bow</div>
+              </div>
+              <div class="skill-description">Basic ranged weapon crafting</div>
             </div>
-            <div class="card ${userSkill.level < 5 ? 'disabled-card' : ''}">
-              <h3>Leather Work</h3>
-              <p>Level 5 required</p>
-              <p>30 XP per item (5s each)</p>
-              <button class="btn btn-primary" ${userSkill.level < 5 ? 'disabled' : ''} onclick="game.trainSkill('crafting', 'leather_work', 30, 5000, 'Leather Work')">
-                Leather Work
-              </button>
+            
+            <div class="skill-card ${userSkill.level < 5 ? 'disabled-card' : ''}" onclick="game.trainCrafting(['oak_logs'], 'oak_bow', 25, 5000, 'Crafting Oak Bows', 5)">
+              <div class="skill-header">
+                <div class="skill-icon">🏹</div>
+                <div class="skill-info">
+                  <div class="skill-name">Oak Bow</div>
+                  <div class="skill-level">Level 5+</div>
+                </div>
+                <div class="skill-xp">25 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">5s per bow</div>
+              </div>
+              <div class="skill-description">Improved ranged weapon crafting</div>
+            </div>
+            
+            <div class="skill-card ${userSkill.level < 10 ? 'disabled-card' : ''}" onclick="game.trainCrafting(['willow_logs'], 'willow_bow', 40, 6000, 'Crafting Willow Bows', 10)">
+              <div class="skill-header">
+                <div class="skill-icon">🏹</div>
+                <div class="skill-info">
+                  <div class="skill-name">Willow Bow</div>
+                  <div class="skill-level">Level 10+</div>
+                </div>
+                <div class="skill-xp">40 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">6s per bow</div>
+              </div>
+              <div class="skill-description">Advanced ranged weapon crafting</div>
+            </div>
+            
+            <div class="skill-card ${userSkill.level < 15 ? 'disabled-card' : ''}" onclick="game.trainCrafting(['leather'], 'leather_armor', 30, 5000, 'Crafting Leather Armor', 15)">
+              <div class="skill-header">
+                <div class="skill-icon">🦺</div>
+                <div class="skill-info">
+                  <div class="skill-name">Leather Armor</div>
+                  <div class="skill-level">Level 15+</div>
+                </div>
+                <div class="skill-xp">30 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">5s per armor</div>
+              </div>
+              <div class="skill-description">Basic armor crafting</div>
+            </div>
+            
+            <div class="skill-card ${userSkill.level < 25 ? 'disabled-card' : ''}" onclick="game.trainCrafting(['gold_ore'], 'gold_ring', 50, 6000, 'Crafting Gold Rings', 25)">
+              <div class="skill-header">
+                <div class="skill-icon">💍</div>
+                <div class="skill-info">
+                  <div class="skill-name">Gold Ring</div>
+                  <div class="skill-level">Level 25+</div>
+                </div>
+                <div class="skill-xp">50 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">6s per ring</div>
+              </div>
+              <div class="skill-description">Jewelry crafting</div>
+            </div>
+            
+            <div class="skill-card ${userSkill.level < 35 ? 'disabled-card' : ''}" onclick="game.trainCrafting(['silver_ore'], 'silver_necklace', 75, 7000, 'Crafting Silver Necklaces', 35)">
+              <div class="skill-header">
+                <div class="skill-icon">📿</div>
+                <div class="skill-info">
+                  <div class="skill-name">Silver Necklace</div>
+                  <div class="skill-level">Level 35+</div>
+                </div>
+                <div class="skill-xp">75 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">7s per necklace</div>
+              </div>
+              <div class="skill-description">Advanced jewelry crafting</div>
             </div>
           </div>
         `;
       
       case 'runecrafting':
         return `
-          <div class="grid grid-3">
-            <div class="card ${userSkill.level < 1 ? 'disabled-card' : ''}">
-              <h3>Create Runes</h3>
-              <p>Level 1 required</p>
-              <p>20 XP per rune (4s each)</p>
-              <button class="btn btn-primary" ${userSkill.level < 1 ? 'disabled' : ''} onclick="game.trainSkill('runecrafting', 'create_runes', 20, 4000, 'Creating Runes')">
-                Create Runes
-              </button>
+          <div class="skills-grid">
+            <div class="skill-card ${userSkill.level < 1 ? 'disabled-card' : ''}" onclick="game.trainRunecrafting(['essence'], 'air_rune', 20, 4000, 'Crafting Air Runes', 1)">
+              <div class="skill-header">
+                <div class="skill-icon">💨</div>
+                <div class="skill-info">
+                  <div class="skill-name">Air Rune</div>
+                  <div class="skill-level">Level 1+</div>
+                </div>
+                <div class="skill-xp">20 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">4s per rune</div>
+              </div>
+              <div class="skill-description">Basic elemental rune crafting</div>
             </div>
-            <div class="card ${userSkill.level < 10 ? 'disabled-card' : ''}">
-              <h3>Enchant Items</h3>
-              <p>Level 10 required</p>
-              <p>50 XP per enchant (8s each)</p>
-              <button class="btn btn-primary" ${userSkill.level < 10 ? 'disabled' : ''} onclick="game.trainSkill('runecrafting', 'enchant_items', 50, 8000, 'Enchanting Items')">
-                Enchant Items
-              </button>
+            
+            <div class="skill-card ${userSkill.level < 5 ? 'disabled-card' : ''}" onclick="game.trainRunecrafting(['essence'], 'water_rune', 30, 5000, 'Crafting Water Runes', 5)">
+              <div class="skill-header">
+                <div class="skill-icon">💧</div>
+                <div class="skill-info">
+                  <div class="skill-name">Water Rune</div>
+                  <div class="skill-level">Level 5+</div>
+                </div>
+                <div class="skill-xp">30 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">5s per rune</div>
+              </div>
+              <div class="skill-description">Elemental water magic</div>
+            </div>
+            
+            <div class="skill-card ${userSkill.level < 10 ? 'disabled-card' : ''}" onclick="game.trainRunecrafting(['essence'], 'earth_rune', 40, 6000, 'Crafting Earth Runes', 10)">
+              <div class="skill-header">
+                <div class="skill-icon">🌍</div>
+                <div class="skill-info">
+                  <div class="skill-name">Earth Rune</div>
+                  <div class="skill-level">Level 10+</div>
+                </div>
+                <div class="skill-xp">40 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">6s per rune</div>
+              </div>
+              <div class="skill-description">Elemental earth magic</div>
+            </div>
+            
+            <div class="skill-card ${userSkill.level < 15 ? 'disabled-card' : ''}" onclick="game.trainRunecrafting(['essence'], 'fire_rune', 50, 7000, 'Crafting Fire Runes', 15)">
+              <div class="skill-header">
+                <div class="skill-icon">🔥</div>
+                <div class="skill-info">
+                  <div class="skill-name">Fire Rune</div>
+                  <div class="skill-level">Level 15+</div>
+                </div>
+                <div class="skill-xp">50 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">7s per rune</div>
+              </div>
+              <div class="skill-description">Elemental fire magic</div>
+            </div>
+            
+            <div class="skill-card ${userSkill.level < 25 ? 'disabled-card' : ''}" onclick="game.trainRunecrafting(['essence'], 'mind_rune', 75, 8000, 'Crafting Mind Runes', 25)">
+              <div class="skill-header">
+                <div class="skill-icon">🧠</div>
+                <div class="skill-info">
+                  <div class="skill-name">Mind Rune</div>
+                  <div class="skill-level">Level 25+</div>
+                </div>
+                <div class="skill-xp">75 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">8s per rune</div>
+              </div>
+              <div class="skill-description">Mental magic enhancement</div>
+            </div>
+            
+            <div class="skill-card ${userSkill.level < 35 ? 'disabled-card' : ''}" onclick="game.trainRunecrafting(['essence'], 'body_rune', 100, 9000, 'Crafting Body Runes', 35)">
+              <div class="skill-header">
+                <div class="skill-icon">💪</div>
+                <div class="skill-info">
+                  <div class="skill-name">Body Rune</div>
+                  <div class="skill-level">Level 35+</div>
+                </div>
+                <div class="skill-xp">100 XP</div>
+              </div>
+              <div class="skill-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-text">9s per rune</div>
+              </div>
+              <div class="skill-description">Physical magic enhancement</div>
             </div>
           </div>
         `;
@@ -3916,13 +4168,13 @@ class BMTIdle {
         
         <!-- Quest Tabs -->
         <div class="quest-tabs">
-          <button class="btn btn-primary" onclick="game.showQuestTab('daily')" id="quest-tab-daily">
+          <button class="btn ${this.currentUser.currentQuestTab === 'daily' ? 'btn-primary' : 'btn-secondary'}" onclick="game.showQuestTab('daily')" id="quest-tab-daily">
             🌅 Daily Quests
           </button>
-          <button class="btn btn-secondary" onclick="game.showQuestTab('weekly')" id="quest-tab-weekly">
+          <button class="btn ${this.currentUser.currentQuestTab === 'weekly' ? 'btn-primary' : 'btn-secondary'}" onclick="game.showQuestTab('weekly')" id="quest-tab-weekly">
             📅 Weekly Quests
           </button>
-          <button class="btn btn-secondary" onclick="game.showQuestTab('story')" id="quest-tab-story">
+          <button class="btn ${this.currentUser.currentQuestTab === 'story' ? 'btn-primary' : 'btn-secondary'}" onclick="game.showQuestTab('story')" id="quest-tab-story">
             📖 Story Quests
           </button>
         </div>
@@ -3930,7 +4182,7 @@ class BMTIdle {
         <!-- Quest Content -->
         <div class="dashboard-card">
           <div id="quest-content">
-            ${this.renderDailyQuests()}
+            ${this.getCurrentQuestContent()}
           </div>
         </div>
       </div>
@@ -4462,7 +4714,25 @@ class BMTIdle {
     this.currentUser.questProgress[questId].completed = true;
   }
 
+  getCurrentQuestContent() {
+    const currentTab = this.currentUser.currentQuestTab || 'daily';
+    switch(currentTab) {
+      case 'daily':
+        return this.renderDailyQuests();
+      case 'weekly':
+        return this.renderWeeklyQuests();
+      case 'story':
+        return this.renderStoryQuests();
+      default:
+        return this.renderDailyQuests();
+    }
+  }
+
   showQuestTab(tab) {
+    // Store current quest tab in user data
+    this.currentUser.currentQuestTab = tab;
+    this.saveUserData();
+    
     // Update tab buttons
     document.querySelectorAll('[id^="quest-tab-"]').forEach(btn => {
       btn.className = 'btn btn-secondary';
@@ -4544,17 +4814,13 @@ class BMTIdle {
     const rewards = [];
     
     if (quest.reward.xp) {
-      // Add XP to appropriate skill
+      // Add XP only to the specific skill used to complete the quest
       if (quest.objective.skill && quest.objective.skill !== 'any') {
         this.addXP(quest.objective.skill, quest.reward.xp);
         rewards.push(`+${quest.reward.xp} ${quest.objective.skill} XP`);
       } else {
-        // Add XP to all skills or highest skill
-        const skills = Object.keys(this.currentUser.skills);
-        skills.forEach(skill => {
-          this.addXP(skill, Math.floor(quest.reward.xp / skills.length));
-        });
-        rewards.push(`+${quest.reward.xp} XP (all skills)`);
+        // For quests without specific skill, don't give XP (or give to a default skill)
+        console.log('Quest has no specific skill objective, skipping XP reward');
       }
     }
     
@@ -4563,12 +4829,7 @@ class BMTIdle {
       rewards.push(`+${this.formatCoins(quest.reward.coins)}`);
     }
     
-    if (quest.reward.items) {
-      quest.reward.items.forEach(itemId => {
-        this.currentUser.inventory[itemId] = (this.currentUser.inventory[itemId] || 0) + 1;
-        rewards.push(`${this.getItemIcon(itemId)} ${this.gameData.items[itemId]?.name}`);
-      });
-    }
+    // Item rewards removed - quests now only give coins and experience
     
     // Update quest progress counters
     this.currentUser.questProgress.questsCompleted = (this.currentUser.questProgress.questsCompleted || 0) + 1;
@@ -4576,6 +4837,22 @@ class BMTIdle {
     this.saveUserData();
     this.render();
     this.showNotification(`Quest completed! ${rewards.join(', ')}`);
+  }
+
+  ensureAllSkillsInitialized() {
+    // Ensure all skills from gameData are initialized for the current user
+    Object.keys(this.gameData.skills).forEach(skillId => {
+      if (!this.currentUser.skills[skillId]) {
+        if (skillId === 'hitpoints') {
+          this.currentUser.skills[skillId] = { level: 10, xp: 1154 }; // Level 10 = 1154 XP
+        } else {
+          this.currentUser.skills[skillId] = { level: 1, xp: 0 };
+        }
+      }
+    });
+    
+    // Save the user data to persist the skill initialization
+    this.saveUserData();
   }
 
   addXP(skillId, amount) {
@@ -6903,7 +7180,13 @@ class BMTIdle {
   }
 
   // Game Logic Methods
-  trainSkill(skillId, itemReward, xpGain, actionTime, activityName, seedRequired = null) {
+  trainSkill(skillId, itemReward, xpGain, actionTime, activityName, seedRequired = null, requiredLevel = 1) {
+    // Check if player has required level
+    if (this.currentUser.skills[skillId].level < requiredLevel) {
+      this.showNotification(`You need level ${requiredLevel} ${this.gameData.skills[skillId].name} to do this activity!`);
+      return;
+    }
+    
     // For farming, check if player has seeds
     if (seedRequired && (!this.currentUser.inventory[seedRequired] || this.currentUser.inventory[seedRequired] < 1)) {
       this.showNotification(`You need ${seedRequired} to start this training!`);
@@ -6939,6 +7222,258 @@ class BMTIdle {
     
     delete this.currentUser.currentTraining;
     this.showNotification('Training stopped.');
+    this.saveUserData();
+    this.render();
+  }
+
+  trainCooking(ingredients, result, xpGain, actionTime, activityName, requiredLevel = 1) {
+    // Check if player has required level
+    if (this.currentUser.skills.cooking.level < requiredLevel) {
+      this.showNotification(`You need level ${requiredLevel} Cooking to do this activity!`);
+      return;
+    }
+    
+    // Handle single ingredient (string) or multiple ingredients (array)
+    const ingredientList = Array.isArray(ingredients) ? ingredients : [ingredients];
+    
+    // Check if player has all required ingredients
+    for (const ingredient of ingredientList) {
+      if (!this.currentUser.inventory[ingredient] || this.currentUser.inventory[ingredient] < 1) {
+        this.showNotification(`You need ${ingredient} to cook this!`);
+        return;
+      }
+    }
+    
+    // Stop any current training
+    if (this.currentUser.currentTraining) {
+      this.stopTraining();
+    }
+    
+    // Start new 24-hour cooking training session
+    const startTime = Date.now();
+    this.currentUser.currentTraining = {
+      skill: 'cooking',
+      activity: activityName,
+      ingredients: ingredientList, // Store ingredients for consumption
+      result: result, // Store result item
+      xpRate: xpGain,
+      actionTime: actionTime, // Time per action in milliseconds
+      startTime: startTime,
+      duration: 24 * 60 * 60 * 1000, // 24 hours
+      lastAction: startTime // Start at exact same time so timer starts at 0
+    };
+    
+    this.showNotification(`Started cooking ${activityName} for 24 hours!`);
+    this.saveUserData();
+    this.render();
+  }
+
+  trainSmelting(ingredients, result, xpGain, actionTime, activityName, requiredLevel = 1) {
+    // Check if player has required level
+    if (this.currentUser.skills.smelting.level < requiredLevel) {
+      this.showNotification(`You need level ${requiredLevel} Smelting to do this activity!`);
+      return;
+    }
+    
+    // Handle single ingredient (string) or multiple ingredients (array)
+    const ingredientList = Array.isArray(ingredients) ? ingredients : [ingredients];
+    
+    // Check if player has all required ingredients
+    for (const ingredient of ingredientList) {
+      if (!this.currentUser.inventory[ingredient] || this.currentUser.inventory[ingredient] < 1) {
+        this.showNotification(`You need ${ingredient} to smelt this!`);
+        return;
+      }
+    }
+    
+    // Stop any current training
+    if (this.currentUser.currentTraining) {
+      this.stopTraining();
+    }
+    
+    // Start new 24-hour smelting training session
+    const startTime = Date.now();
+    this.currentUser.currentTraining = {
+      skill: 'smelting',
+      activity: activityName,
+      ingredients: ingredientList, // Store ingredients for consumption
+      result: result, // Store result item
+      xpRate: xpGain,
+      actionTime: actionTime, // Time per action in milliseconds
+      startTime: startTime,
+      duration: 24 * 60 * 60 * 1000, // 24 hours
+      lastAction: startTime // Start at exact same time so timer starts at 0
+    };
+    
+    this.showNotification(`Started smelting ${activityName} for 24 hours!`);
+    this.saveUserData();
+    this.render();
+  }
+
+  trainSmithing(ingredients, result, xpGain, actionTime, activityName, requiredLevel = 1) {
+    // Check if player has required level
+    if (this.currentUser.skills.smithing.level < requiredLevel) {
+      this.showNotification(`You need level ${requiredLevel} Smithing to do this activity!`);
+      return;
+    }
+    
+    // Handle single ingredient (string) or multiple ingredients (array)
+    const ingredientList = Array.isArray(ingredients) ? ingredients : [ingredients];
+    
+    // Check if player has all required ingredients
+    for (const ingredient of ingredientList) {
+      if (!this.currentUser.inventory[ingredient] || this.currentUser.inventory[ingredient] < 1) {
+        this.showNotification(`You need ${ingredient} to smith this!`);
+        return;
+      }
+    }
+    
+    // Stop any current training
+    if (this.currentUser.currentTraining) {
+      this.stopTraining();
+    }
+    
+    // Start new 24-hour smithing training session
+    const startTime = Date.now();
+    this.currentUser.currentTraining = {
+      skill: 'smithing',
+      activity: activityName,
+      ingredients: ingredientList, // Store ingredients for consumption
+      result: result, // Store result item
+      xpRate: xpGain,
+      actionTime: actionTime, // Time per action in milliseconds
+      startTime: startTime,
+      duration: 24 * 60 * 60 * 1000, // 24 hours
+      lastAction: startTime // Start at exact same time so timer starts at 0
+    };
+    
+    this.showNotification(`Started smithing ${activityName} for 24 hours!`);
+    this.saveUserData();
+    this.render();
+  }
+
+  trainAlchemy(ingredients, result, xpGain, actionTime, activityName, requiredLevel = 1) {
+    // Check if player has required level
+    if (this.currentUser.skills.herblore.level < requiredLevel) {
+      this.showNotification(`You need level ${requiredLevel} Herblore to do this activity!`);
+      return;
+    }
+    
+    // Handle single ingredient (string) or multiple ingredients (array)
+    const ingredientList = Array.isArray(ingredients) ? ingredients : [ingredients];
+    
+    // Check if player has all required ingredients
+    for (const ingredient of ingredientList) {
+      if (!this.currentUser.inventory[ingredient] || this.currentUser.inventory[ingredient] < 1) {
+        this.showNotification(`You need ${ingredient} to brew this!`);
+        return;
+      }
+    }
+    
+    // Stop any current training
+    if (this.currentUser.currentTraining) {
+      this.stopTraining();
+    }
+    
+    // Start new 24-hour herblore training session
+    const startTime = Date.now();
+    this.currentUser.currentTraining = {
+      skill: 'herblore',
+      activity: activityName,
+      ingredients: ingredientList, // Store ingredients for consumption
+      result: result, // Store result item
+      xpRate: xpGain,
+      actionTime: actionTime, // Time per action in milliseconds
+      startTime: startTime,
+      duration: 24 * 60 * 60 * 1000, // 24 hours
+      lastAction: startTime // Start at exact same time so timer starts at 0
+    };
+    
+    this.showNotification(`Started brewing ${activityName} for 24 hours!`);
+    this.saveUserData();
+    this.render();
+  }
+
+  trainCrafting(ingredients, result, xpGain, actionTime, activityName, requiredLevel = 1) {
+    // Check if player has required level
+    if (this.currentUser.skills.crafting.level < requiredLevel) {
+      this.showNotification(`You need level ${requiredLevel} Crafting to do this activity!`);
+      return;
+    }
+    
+    // Handle single ingredient (string) or multiple ingredients (array)
+    const ingredientList = Array.isArray(ingredients) ? ingredients : [ingredients];
+    
+    // Check if player has all required ingredients
+    for (const ingredient of ingredientList) {
+      if (!this.currentUser.inventory[ingredient] || this.currentUser.inventory[ingredient] < 1) {
+        this.showNotification(`You need ${ingredient} to craft this!`);
+        return;
+      }
+    }
+    
+    // Stop any current training
+    if (this.currentUser.currentTraining) {
+      this.stopTraining();
+    }
+    
+    // Start new 24-hour crafting training session
+    const startTime = Date.now();
+    this.currentUser.currentTraining = {
+      skill: 'crafting',
+      activity: activityName,
+      ingredients: ingredientList, // Store ingredients for consumption
+      result: result, // Store result item
+      xpRate: xpGain,
+      actionTime: actionTime, // Time per action in milliseconds
+      startTime: startTime,
+      duration: 24 * 60 * 60 * 1000, // 24 hours
+      lastAction: startTime // Start at exact same time so timer starts at 0
+    };
+    
+    this.showNotification(`Started crafting ${activityName} for 24 hours!`);
+    this.saveUserData();
+    this.render();
+  }
+
+  trainRunecrafting(ingredients, result, xpGain, actionTime, activityName, requiredLevel = 1) {
+    // Check if player has required level
+    if (this.currentUser.skills.runecrafting.level < requiredLevel) {
+      this.showNotification(`You need level ${requiredLevel} Runecrafting to do this activity!`);
+      return;
+    }
+    
+    // Handle single ingredient (string) or multiple ingredients (array)
+    const ingredientList = Array.isArray(ingredients) ? ingredients : [ingredients];
+    
+    // Check if player has all required ingredients
+    for (const ingredient of ingredientList) {
+      if (!this.currentUser.inventory[ingredient] || this.currentUser.inventory[ingredient] < 1) {
+        this.showNotification(`You need ${ingredient} to craft this!`);
+        return;
+      }
+    }
+    
+    // Stop any current training
+    if (this.currentUser.currentTraining) {
+      this.stopTraining();
+    }
+    
+    // Start new 24-hour runecrafting training session
+    const startTime = Date.now();
+    this.currentUser.currentTraining = {
+      skill: 'runecrafting',
+      activity: activityName,
+      ingredients: ingredientList, // Store ingredients for consumption
+      result: result, // Store result item
+      xpRate: xpGain,
+      actionTime: actionTime, // Time per action in milliseconds
+      startTime: startTime,
+      duration: 24 * 60 * 60 * 1000, // 24 hours
+      lastAction: startTime // Start at exact same time so timer starts at 0
+    };
+    
+    this.showNotification(`Started runecrafting ${activityName} for 24 hours!`);
     this.saveUserData();
     this.render();
   }
@@ -6985,6 +7520,27 @@ class BMTIdle {
           }
         }
         
+        // For cooking, check if we have all required ingredients for this action
+        if (training.ingredients) {
+          for (const ingredient of training.ingredients) {
+            if (!this.currentUser.inventory[ingredient] || this.currentUser.inventory[ingredient] < 1) {
+              this.showNotification(`Out of ${ingredient}! Cooking stopped.`);
+              delete this.currentUser.currentTraining;
+              this.saveUserData();
+              this.render();
+              return;
+            }
+          }
+          
+          // Use one of each ingredient for this action
+          for (const ingredient of training.ingredients) {
+            this.currentUser.inventory[ingredient]--;
+            if (this.currentUser.inventory[ingredient] === 0) {
+              delete this.currentUser.inventory[ingredient];
+            }
+          }
+        }
+        
         // Add XP for this action
         this.currentUser.skills[training.skill].xp += training.xpRate;
         
@@ -7004,6 +7560,24 @@ class BMTIdle {
           });
           
           this.currentUser.inventory[training.itemReward] = (this.currentUser.inventory[training.itemReward] || 0) + itemsThisAction;
+        }
+        
+        // For cooking, add the cooked result
+        if (training.result) {
+          // Base items: 1 per action
+          let itemsThisAction = 1;
+          
+          // Apply house efficiency bonuses
+          const houseBonuses = this.getHouseBonuses();
+          houseBonuses.forEach(bonus => {
+            if (bonus.type === 'all' || bonus.type === training.skill) {
+              if (Math.random() < (bonus.efficiency || 0) / 100) {
+                itemsThisAction++; // Double loot chance
+              }
+            }
+          });
+          
+          this.currentUser.inventory[training.result] = (this.currentUser.inventory[training.result] || 0) + itemsThisAction;
         }
         
         // Track quest progress
@@ -7489,11 +8063,20 @@ class BMTIdle {
   }
 
   onMonsterDefeated(monster) {
+    console.log('Monster defeated! Giving XP:', monster.xp);
+    
     // Give XP
     this.currentUser.skills.attack.xp += monster.xp.attack;
     this.currentUser.skills.strength.xp += monster.xp.strength;
     this.currentUser.skills.defence.xp += monster.xp.defence;
     this.currentUser.skills.hitpoints.xp += monster.xp.hitpoints;
+    
+    console.log('XP after monster defeat:', {
+      attack: this.currentUser.skills.attack.xp,
+      strength: this.currentUser.skills.strength.xp,
+      defence: this.currentUser.skills.defence.xp,
+      hitpoints: this.currentUser.skills.hitpoints.xp
+    });
     
     // Give loot
     const coinReward = Math.floor(Math.random() * (monster.loot.coins.max - monster.loot.coins.min + 1)) + monster.loot.coins.min;
@@ -7516,6 +8099,9 @@ class BMTIdle {
         this.showNotification(`${this.gameData.skills[skill].name} level up! You are now level ${newLevel}.`);
       }
     });
+    
+    // Save user data after XP changes
+    this.saveUserData();
   }
 
   eatFood() {
@@ -9228,65 +9814,6 @@ class BMTIdle {
     }
   }
 
-  // Enhanced combat with particle effects
-  processCombatTraining() {
-    if (!this.currentUser.currentTraining || this.currentUser.currentTraining.skill !== 'combat') return;
-    
-    const monster = this.currentUser.currentMonster;
-    if (!monster) return;
-    
-    const now = Date.now();
-    const timeSinceStart = now - this.currentUser.currentTraining.startTime;
-    const actionTime = monster.attackSpeed * 1000;
-    
-    // Calculate attacks
-    const totalPlayerAttacksSinceStart = Math.floor(timeSinceStart / actionTime);
-    const totalMonsterAttacksSinceStart = Math.floor(timeSinceStart / actionTime);
-    
-    const newPlayerAttacks = totalPlayerAttacksSinceStart - (this.currentUser.currentTraining.playerAttacksCompleted || 0);
-    const newMonsterAttacks = totalMonsterAttacksSinceStart - (this.currentUser.currentTraining.monsterAttacksCompleted || 0);
-    
-    const maxAttacks = Math.max(newPlayerAttacks, newMonsterAttacks);
-    
-    for (let i = 0; i < maxAttacks; i++) {
-      // Player attack
-      if (i < newPlayerAttacks) {
-        const damage = this.calculatePlayerDamage(monster);
-        monster.currentHp = Math.max(0, monster.currentHp - damage);
-        
-        // Create damage particle
-        this.createParticle(`-${damage}`, 'damage', 
-          window.innerWidth / 2 - 100, 
-          window.innerHeight / 2 - 50);
-        
-        if (monster.currentHp <= 0) {
-          this.onMonsterDefeated(monster);
-          return;
-        }
-      }
-      
-      // Monster attack
-      if (i < newMonsterAttacks) {
-        const damage = this.calculateMonsterDamage(monster);
-        this.currentUser.hp = Math.max(0, this.currentUser.hp - damage);
-        
-        // Create damage particle for player
-        this.createParticle(`-${damage}`, 'damage', 
-          window.innerWidth / 2 + 100, 
-          window.innerHeight / 2 - 50);
-        
-        if (this.currentUser.hp <= 0) {
-          this.stopTraining();
-          this.showNotification('💀 You died! Training stopped.', 'error');
-          return;
-        }
-      }
-    }
-    
-    // Update attack counts
-    this.currentUser.currentTraining.playerAttacksCompleted = totalPlayerAttacksSinceStart;
-    this.currentUser.currentTraining.monsterAttacksCompleted = totalMonsterAttacksSinceStart;
-  }
 
   // Enhanced item collection with particles
   addToInventory(itemId, quantity = 1) {

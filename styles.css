@@ -1472,6 +1472,35 @@ body {
   background: linear-gradient(90deg, #666 0%, #999 100%);
 }
 
+.skill-card.disabled-card {
+  opacity: 0.4;
+  filter: grayscale(0.9);
+  pointer-events: none;
+  cursor: not-allowed;
+  background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+  border-color: #444;
+}
+
+.skill-card.disabled-card .skill-icon {
+  opacity: 0.3;
+}
+
+.skill-card.disabled-card .skill-name {
+  color: #888;
+}
+
+.skill-card.disabled-card .skill-level {
+  color: #666;
+}
+
+.skill-card.disabled-card .skill-xp {
+  color: #666;
+}
+
+.skill-card.disabled-card .skill-description {
+  color: #666;
+}
+
 .card-header {
   display: flex;
   align-items: center;
